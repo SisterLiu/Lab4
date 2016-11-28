@@ -126,26 +126,28 @@ void WinProcedure::initial()
 	Object* pNewObject = NULL;
 
 	Assimp::Importer importerTest;
-	const aiScene* sceneTest = importerTest.ReadFile("./model/bird.3ds", aiProcess_Triangulate);
-	const aiMaterial* matTest = sceneTest->mMaterials[0];
-	const aiMesh* pMesh = sceneTest->mMeshes[0];
-	aiMaterialProperty* aiMP;
-	aiColor3D c;
-	matTest->Get(AI_MATKEY_COLOR_DIFFUSE,c);
-	int textureCount;
-	textureCount = matTest->GetTextureCount(aiTextureType_DIFFUSE);
-	textureCount = matTest->GetTextureCount(aiTextureType_AMBIENT);
-	textureCount = matTest->GetTextureCount(aiTextureType_SPECULAR);
+	const aiScene* sceneTest = importerTest.ReadFile("./model/2/man.3ds", aiProcess_Triangulate);
 
-
-
-
+	
 	pNewObject = new Object();
-	pNewObject->pMesh = new Mesh(pDisplayer->getDevice(), pDisplayer->getContext(), pMesh);
-	pNewObject->pMesh->readTextureFromFile(L"./model/bird.jpg");
+	pNewObject->pModel = new Model(pDisplayer->getDevice(), pDisplayer->getContext(), sceneTest, "./model/1",0.01);
+	pNewObject->pModel->meshes[0]->readTextureFromFile(L"./model/2/2.bmp");
 	pNewObject->motion.gravity.y = 0;
+	pNewObject->angle.x = -90;
+	pNewObject->pos.y = pNewObject->pModel->collision.z;
+	pNewObject->angle.z = 0;
 	objects.push_back(pNewObject);
-
+	//*/
+	sceneTest = importerTest.ReadFile("./model/ground.nff", aiProcess_Triangulate| aiProcess_GenUVCoords | aiProcess_GenNormals);
+	pNewObject = new Object();
+	pNewObject->pModel = new Model(pDisplayer->getDevice(), pDisplayer->getContext(), sceneTest, "./model", 1);
+	pNewObject->pModel->meshes[0]->readTextureFromFile(L"./model/throwPillow.jpg");
+	pNewObject->motion.gravity.y = 0;
+	pNewObject->angle.x = 0;
+	pNewObject->angle.y = 0;
+	pNewObject->angle.z = 0;
+	objects.push_back(pNewObject);
+	//*/
 }
 
 Object* WinProcedure::createObjectFromMesh(Mesh* pMesh,
@@ -156,7 +158,7 @@ Object* WinProcedure::createObjectFromMesh(Mesh* pMesh,
 	Object* pNewObject = NULL;
 	
 	pNewObject = new Object();
-	pNewObject->pMesh = pMesh;
+	//pNewObject->pMesh = pMesh;
 	pNewObject->pos.x = x;
 	pNewObject->pos.y = y;
 	pNewObject->pos.z = z;

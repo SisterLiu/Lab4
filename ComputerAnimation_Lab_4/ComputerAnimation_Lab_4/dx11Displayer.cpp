@@ -9,29 +9,48 @@ void Dx11Displayer::render(std::vector<Object*>* pObjects)
 {
 	updateCamera();
 	//updateCamera2((*pObjects)[1]);
+
 	//-------------------------------------
 	// Clear the back buffer
 	//-------------------------------------
 	pDx11DeviceContext->ClearRenderTargetView(pDx11RenderTargetView, Colors::WhiteSmoke);
 	pDx11DeviceContext->ClearDepthStencilView(pDx11DepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
+	pDx11DeviceContext->ClearDepthStencilView(pDx11ShadowView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 	
 	// Initialize the view matrix
 	XMVECTOR Eye = eyePos;
 	XMVECTOR LookingAt = eyePos + eyeDirect;
 	XMVECTOR Up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
-	constantBuffer.mView = XMMatrixTranspose(XMMatrixLookAtLH(Eye, LookingAt, Up));
+	constantBuffer.mViewCamera = XMMatrixTranspose(XMMatrixLookAtLH(Eye, LookingAt, Up));
 
+	Eye = XMVectorSet(20.0f, 20.0f, 20.0f, 0.0f);
+	LookingAt = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+	constantBuffer.mViewLight = XMMatrixTranspose(XMMatrixLookAtLH(Eye, LookingAt, Up));
 	constantBuffer.cameraPos = eyePos;
-	constantBuffer.lightPos = XMVectorSet(0.0f, 10.0f, 0.0f, 0.0f);
+	constantBuffer.lightPos = Eye;
 	//constantBuffer.lightPos = eyePos;
 	
+	//-------------------------------------------------------------
+	//	Shadow
+	//-------------------------------------------------------------
+	setRenderType(SHADOW);
+
 	// Render
 	for(int i = 0; i < pObjects->size(); i++)
 	{
 		renderObject((*pObjects)[i]);
 	}
-	
-	
+
+	//-------------------------------------------------------------
+	//	Real
+	//-------------------------------------------------------------
+	setRenderType(REAL);
+
+	// Render
+	for(int i = 0; i < pObjects->size(); i++)
+	{
+		renderObject((*pObjects)[i]);
+	}
 
 	//
 	// Present our back buffer to our front buffer
@@ -48,21 +67,25 @@ void Dx11Displayer::renderObject(Object* pObject)
 
 	UINT stride = sizeof(MeshVertex);
 	UINT offset = 0;
-	pDx11DeviceContext->IASetVertexBuffers(0, 1, &pObject->pMesh->pDx11VertexBuffer, &stride, &offset);
-	pDx11DeviceContext->IASetIndexBuffer(pObject->pMesh->pDx11IndexBuffer, DXGI_FORMAT_R32_UINT, 0);
-	pDx11DeviceContext->IASetPrimitiveTopology(pObject->pMesh->layout);
-	pDx11DeviceContext->PSSetShaderResources(0,1,&pObject->pMesh->pDx11TextureView);
-	pDx11DeviceContext->DrawIndexed(pObject->pMesh->numIndex, 0, 0);
+
+	for(int i = 0; i < pObject->pModel->meshes.size(); i++)
+	{
+		pDx11DeviceContext->IASetVertexBuffers(0, 1, &pObject->pModel->meshes[i]->pDx11VertexBuffer, &stride, &offset);
+		pDx11DeviceContext->IASetIndexBuffer(pObject->pModel->meshes[i]->pDx11IndexBuffer, DXGI_FORMAT_R32_UINT, 0);
+		pDx11DeviceContext->IASetPrimitiveTopology(pObject->pModel->meshes[i]->layout);
+		pDx11DeviceContext->PSSetShaderResources(0, 1, &pObject->pModel->meshes[i]->pDx11TextureView);
+		pDx11DeviceContext->DrawIndexed(pObject->pModel->meshes[i]->numIndex, 0, 0);
+	}
 }
 
 XMMATRIX Dx11Displayer::getWorldMatrixFromObject(Object* pObject)
 {
 	XMMATRIX posM;
-	XMFLOAT3 pos;
+	XMFLOAT3 pos = {0,0,0};
 
-	pos.x = pObject->pos.x - pObject->pMesh->collision.center.x;
-	pos.y = pObject->pos.y - pObject->pMesh->collision.center.y;
-	pos.z = pObject->pos.z - pObject->pMesh->collision.center.z;
+	pos.x = pObject->pos.x - pObject->pModel->collision.center.x;
+	pos.y = pObject->pos.y - pObject->pModel->collision.center.y;
+	pos.z = pObject->pos.z - pObject->pModel->collision.center.z;
 
 	posM.r[0] = XMVectorSet(1.0f, 0.0f, 0.0f, pos.x);
 	posM.r[1] = XMVectorSet(0.0f, 1.0f, 0.0f, pos.y);
@@ -92,6 +115,28 @@ XMMATRIX Dx11Displayer::getWorldMatrixFromObject(Object* pObject)
 	angleM = angleM * eularM;
 
 	return posM*angleM;
+}
+
+void Dx11Displayer::setRenderType(int type)
+{
+	if(type == SHADOW)
+	{
+		pDx11DeviceContext->OMSetRenderTargets(0, NULL, pDx11ShadowView);
+		pDx11DeviceContext->VSSetShader(pDx11ShadowVertexShader, nullptr, 0);
+		pDx11DeviceContext->IASetInputLayout(pDx11ShadowVertexLayout);
+		pDx11DeviceContext->PSSetShader(pDx11ShadowPixelShader, nullptr, 0);
+		pDx11DeviceContext->RSSetViewports(1, &shadowViewPort);
+	}
+
+	if(type == REAL)
+	{
+		pDx11DeviceContext->OMSetRenderTargets(1, &pDx11RenderTargetView, pDx11DepthStencilView);
+		pDx11DeviceContext->VSSetShader(pDx11VertexShader, nullptr, 0);
+		pDx11DeviceContext->IASetInputLayout(pDx11VertexLayout);
+		pDx11DeviceContext->PSSetShader(pDx11PixelShader, nullptr, 0);
+		pDx11DeviceContext->PSSetShaderResources(1, 1, &pDx11ShadowShaderResourceView);
+		pDx11DeviceContext->RSSetViewports(1, &viewPort);
+	}
 }
 
 void Dx11Displayer::updateCamera()
@@ -237,6 +282,7 @@ Dx11Displayer::Dx11Displayer(HWND hwnd)
 	GetClientRect(hwnd, &rc);
 	UINT width = rc.right - rc.left;
 	UINT height = rc.bottom - rc.top;
+	int shadowSizeModify = 2;
 
 	//-------------------------------------------------------------------------
 	//	Dx11 Device and Swap Chain
@@ -291,6 +337,49 @@ Dx11Displayer::Dx11Displayer(HWND hwnd)
 		return;
 
 	//-------------------------------------------------------------------------
+	//	Shadow
+	//-------------------------------------------------------------------------
+	//	Shadow Texture2D Describe
+	D3D11_TEXTURE2D_DESC descShadow;
+	ZeroMemory(&descShadow, sizeof(descShadow));
+	descShadow.Width = width * shadowSizeModify;
+	descShadow.Height = height * shadowSizeModify;
+	descShadow.MipLevels = 1;
+	descShadow.ArraySize = 1;
+	descShadow.Format = DXGI_FORMAT_R24G8_TYPELESS;
+	descShadow.SampleDesc.Count = 1;
+	descShadow.SampleDesc.Quality = 0;
+	descShadow.Usage = D3D11_USAGE_DEFAULT;
+	descShadow.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_DEPTH_STENCIL;
+	descShadow.CPUAccessFlags = 0;
+	descShadow.MiscFlags = 0;
+	hr = pDx11Device->CreateTexture2D(&descShadow, nullptr, &pDx11Shadow);
+	if(FAILED(hr))
+		return;
+
+	//	Create the depth stencil view
+	D3D11_DEPTH_STENCIL_VIEW_DESC descShadowView;
+	ZeroMemory(&descShadowView, sizeof(descShadowView));
+	descShadowView.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	descShadowView.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+	descShadowView.Texture2D.MipSlice = 0;
+	hr = pDx11Device->CreateDepthStencilView(pDx11Shadow, &descShadowView, &pDx11ShadowView);
+	if(FAILED(hr))
+		return;
+
+	//	Create Shader Resouce view
+	D3D11_SHADER_RESOURCE_VIEW_DESC descShadowShaderResource;
+	ZeroMemory(&descShadowShaderResource, sizeof(descShadowShaderResource));
+	descShadowShaderResource.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+	descShadowShaderResource.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+	descShadowShaderResource.Texture2D.MostDetailedMip = 0;
+	descShadowShaderResource.Texture2D.MipLevels = 1;
+	hr = pDx11Device->CreateShaderResourceView(pDx11Shadow, &descShadowShaderResource, &pDx11ShadowShaderResourceView);
+	if(FAILED(hr))
+		return;
+
+
+	//-------------------------------------------------------------------------
 	//	Depth Stencil
 	//-------------------------------------------------------------------------
 	// Create depth stencil texture
@@ -330,14 +419,25 @@ Dx11Displayer::Dx11Displayer(HWND hwnd)
 	//-------------------------------------------------------------------------
 	//	Set View Port
 	//-------------------------------------------------------------------------
+	viewPort.Width = width;
+	viewPort.Height = height;
+	viewPort.MinDepth = 0.0f;
+	viewPort.MaxDepth = 1.0f;
+	viewPort.TopLeftX = 0;
+	viewPort.TopLeftY = 0;
+	pDx11DeviceContext->RSSetViewports(1, &viewPort);
+
+	//-------------------------------------------------------------------------
+	//	Set Shadow View Port
+	//-------------------------------------------------------------------------
 	D3D11_VIEWPORT vp;
-	vp.Width = width;
-	vp.Height = height;
-	vp.MinDepth = 0.0f;
-	vp.MaxDepth = 1.0f;
-	vp.TopLeftX = 0;
-	vp.TopLeftY = 0;
-	pDx11DeviceContext->RSSetViewports(1, &vp);
+	shadowViewPort.Width = width * shadowSizeModify;
+	shadowViewPort.Height = height * shadowSizeModify;
+	shadowViewPort.MinDepth = 0.0f;
+	shadowViewPort.MaxDepth = 1.0f;
+	shadowViewPort.TopLeftX = 0;
+	shadowViewPort.TopLeftY = 0;
+
 
 	//-------------------------------------------------------------------------
 	//	Vertex Shader
@@ -400,16 +500,69 @@ Dx11Displayer::Dx11Displayer(HWND hwnd)
 	pDx11DeviceContext->PSSetShader(pDx11PixelShader, nullptr, 0);
 
 	//-------------------------------------------------------------------------
+	//	Shadow Vertex Shader
+	//-------------------------------------------------------------------------
+
+	// Compile the Shadow vertex shader
+	hr = CompileShaderFromFile(L"ShadowVertexShader.hlsl", "main", "vs_4_0", &pVSBlob);
+	if(FAILED(hr))
+	{
+		MessageBox(nullptr,
+			L"The FX file cannot be compiled.  Please run this executable from the directory that contains the FX file.", L"Error", MB_OK);
+		return;
+	}
+
+	// Create the Shadow vertex shader
+	hr = pDx11Device->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, &pDx11ShadowVertexShader);
+	if(FAILED(hr))
+	{
+		pVSBlob->Release();
+		return;
+	}
+
+	//-------------------------------------------------------------------------
+	//	Input Layout base on Shadow Vertex Shader
+	//-------------------------------------------------------------------------
+	// Create the input layout
+	hr = pDx11Device->CreateInputLayout(layout, 3, pVSBlob->GetBufferPointer(),
+		pVSBlob->GetBufferSize(), &pDx11ShadowVertexLayout);
+	pVSBlob->Release();
+	if(FAILED(hr))
+		return;
+
+	//-------------------------------------------------------------------------
+	//	Shadow Pixel Shader
+	//-------------------------------------------------------------------------
+	// Compile the Shadow pixel shader
+	hr = CompileShaderFromFile(L"ShadowPixelShader.hlsl", "main", "ps_4_0", &pPSBlob);
+	if(FAILED(hr))
+	{
+		MessageBox(nullptr,
+			L"The FX file cannot be compiled.  Please run this executable from the directory that contains the FX file.", L"Error", MB_OK);
+		return;
+	}
+
+	// Create the Shadow pixel shader
+	hr = pDx11Device->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &pDx11ShadowPixelShader);
+	pPSBlob->Release();
+	if(FAILED(hr))
+		return;
+
+	//-------------------------------------------------------------------------
 	//	Vertex Texture Sampler
 	//-------------------------------------------------------------------------
 	D3D11_SAMPLER_DESC samplerDescribe;
 	ZeroMemory(&samplerDescribe,sizeof(samplerDescribe));
-	samplerDescribe.Filter = D3D11_FILTER_MIN_POINT_MAG_MIP_LINEAR;
+	samplerDescribe.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
 	samplerDescribe.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
 	samplerDescribe.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
 	samplerDescribe.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+	samplerDescribe.BorderColor[0] = 0;
+	samplerDescribe.BorderColor[1] = 0;
+	samplerDescribe.BorderColor[2] = 0;
+	samplerDescribe.BorderColor[3] = 1;
 	samplerDescribe.ComparisonFunc = D3D11_COMPARISON_NEVER;
-	samplerDescribe.MaxLOD = 5;
+	samplerDescribe.MaxLOD = 4;
 	samplerDescribe.MinLOD = 0;
 
 	//	Create SamplerState
@@ -440,7 +593,7 @@ Dx11Displayer::Dx11Displayer(HWND hwnd)
 	XMVECTOR Eye = XMVectorSet(10.0f, 5.0f, 0.0f, 0.0f);
 	XMVECTOR LookingAt = XMVectorSet(0.0f, -5.0f, 0.0f, 0.0f);
 	XMVECTOR Up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
-	constantBuffer.mView = XMMatrixTranspose(XMMatrixLookAtLH(Eye, LookingAt, Up));
+	constantBuffer.mViewCamera = XMMatrixTranspose(XMMatrixLookAtLH(Eye, LookingAt, Up));
 
 	// Initialize the projection matrix
 	constantBuffer.mProjection = XMMatrixTranspose(XMMatrixPerspectiveFovLH(XM_PIDIV2, width / (FLOAT)height, 0.01f, 1000.0f));

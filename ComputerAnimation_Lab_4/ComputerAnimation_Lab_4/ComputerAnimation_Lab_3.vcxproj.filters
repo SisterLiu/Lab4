@@ -67,5 +67,11 @@
     <FxCompile Include="PixelShader.hlsl">
       <Filter>源文件</Filter>
     </FxCompile>
+    <FxCompile Include="ShadowVertexShader.hlsl">
+      <Filter>源文件</Filter>
+    </FxCompile>
+    <FxCompile Include="ShadowPixelShader.hlsl">
+      <Filter>源文件</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

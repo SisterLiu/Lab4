@@ -8,7 +8,8 @@
 struct ConstantBuffer
 {
 	DirectX::XMMATRIX mWorld;
-	DirectX::XMMATRIX mView;
+	DirectX::XMMATRIX mViewCamera;
+	DirectX::XMMATRIX mViewLight;
 	DirectX::XMMATRIX mProjection;
 	DirectX::XMVECTOR cameraPos;
 	DirectX::XMVECTOR lightPos;
@@ -45,22 +46,43 @@ typedef class Dx11Displayer
 		ID3D11DeviceContext*	getContext(){return pDx11DeviceContext;}
 
 	private:
-		ID3D11Device*			pDx11Device;
-		ID3D11DeviceContext*	pDx11DeviceContext;
-		IDXGISwapChain*         pDx11SwapChain;
-		ID3D11RenderTargetView* pDx11RenderTargetView;
-		ID3D11Texture2D*        pDx11DepthStencil;
-		ID3D11DepthStencilView* pDx11DepthStencilView;
-		ID3D11VertexShader*     pDx11VertexShader;
-		ID3D11PixelShader*      pDx11PixelShader;
-		ID3D11InputLayout*      pDx11VertexLayout;
-		ID3D11Buffer*           pDx11ConstantBuffer;
-		ID3D11SamplerState*		pDx11SamplerState;
-		ConstantBuffer			constantBuffer;
+		ID3D11Device*				pDx11Device;
+		ID3D11DeviceContext*		pDx11DeviceContext;
+
+		IDXGISwapChain*				pDx11SwapChain;
+		ID3D11RenderTargetView*		pDx11RenderTargetView;
+
+		ID3D11Texture2D*			pDx11DepthStencil;
+		ID3D11DepthStencilView*		pDx11DepthStencilView;
+
+		ID3D11Texture2D*			pDx11Shadow;
+		ID3D11DepthStencilView*		pDx11ShadowView;
+		ID3D11ShaderResourceView*	pDx11ShadowShaderResourceView;
+
+		ID3D11VertexShader*			pDx11ShadowVertexShader;
+		ID3D11PixelShader*			pDx11ShadowPixelShader;
+		ID3D11InputLayout*			pDx11ShadowVertexLayout;
+
+		ID3D11VertexShader*			pDx11VertexShader;
+		ID3D11PixelShader*			pDx11PixelShader;
+		ID3D11InputLayout*			pDx11VertexLayout;
+
+
+		ID3D11Buffer*				pDx11ConstantBuffer;
+		ID3D11SamplerState*			pDx11SamplerState;
+		ConstantBuffer				constantBuffer;
+
+		D3D11_VIEWPORT				viewPort;
+		D3D11_VIEWPORT				shadowViewPort;
 
 		HRESULT CompileShaderFromFile(WCHAR* szFileName, LPCSTR szEntryPoint, LPCSTR szShaderModel, ID3DBlob** ppBlobOut);
 		void updateCamera();
 		void updateCamera2(Object*);
+		void setRenderType(int type);
+
+		static const int SHADOW		= 0x01;
+		static const int REAL		= 0x02;
+
 		DirectX::XMMATRIX getWorldMatrixFromObject(Object*);
 
 		D3D11_INPUT_ELEMENT_DESC layout[3] =

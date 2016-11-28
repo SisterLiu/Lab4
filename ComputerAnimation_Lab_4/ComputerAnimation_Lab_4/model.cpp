@@ -2,13 +2,19 @@
 #include "Wincodec.h"
 #include "WICTextureLoader.h"
 
+
+
 //---------------------------------------------------------------------------
 //	Class Mesh
 //---------------------------------------------------------------------------
 
-Mesh::Mesh(ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContext, const aiMesh* pAiMesh)
+Mesh::Mesh(ID3D11Device* pDevice, ID3D11DeviceContext* pDeviceContext, const aiMesh* pAiMesh, float sizeModify)
 {
-	float sizeModify = 1;
+	if(pAiMesh == NULL)
+		return;
+
+	worldMatrixToParent = DirectX::XMMatrixIdentity();
+
 	numVertex = pAiMesh->mNumVertices;
 	numIndex = pAiMesh->mNumFaces * 3;
 
@@ -143,6 +149,9 @@ Mesh::~Mesh()
 
 void Mesh::readTextureFromFile(LPWSTR file)
 {
+	if(pTexture) pTexture->Release();
+	if(pDx11TextureView) pDx11TextureView->Release();
+
 	CreateWICTextureFromFile(pDx11Device,
 		pDx11DeviceContext,
 		file,
@@ -159,13 +168,68 @@ void Mesh::readTextureFromFile(LPWSTR file)
 //	Class Model
 //---------------------------------------------------------------------------
 
+Model::Model(ID3D11Device* pDevice, ID3D11DeviceContext* pContext, const aiScene* pScene, LPSTR path,float sizeModify)
+{
+	this->pDevice = pDevice;
+	this->pContext = pContext;
+	ppMaterial = pScene->mMaterials;
+	ppMesh = pScene->mMeshes;
+	Mesh* pNewMesh = NULL;
+	bool firstMesh = true;
+	for(int i = 0; i < pScene->mNumMeshes; i++)
+	{
+		pNewMesh = new Mesh(pDevice, pContext, ppMesh[i],sizeModify);
+		aiString aiPath;
+		aiPath.Clear();
+		if(ppMaterial[ppMesh[i]->mMaterialIndex]->GetTextureCount(aiTextureType_DIFFUSE))
+			ppMaterial[ppMesh[i]->mMaterialIndex]->GetTexture(aiTextureType_DIFFUSE,0,&aiPath);
+		std::string strBuffer = aiPath.C_Str();
+		strBuffer = path + ('/'+strBuffer);
+		wchar_t realPath[256];
+		MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED,strBuffer.c_str(), -1, realPath,256);
+		pNewMesh->readTextureFromFile(realPath);
+		meshes.push_back(pNewMesh);
+		if(ppMesh[i]->mNumVertices != 0)
+		{
+			if(firstMesh)
+			{
+				firstMesh = false;
+				collision = pNewMesh->collision;
+			}
+			else
+			{
+				float max, min;
+				// x
+				max = (collision.center.x + collision.x) > (pNewMesh->collision.center.x + pNewMesh->collision.x) ? \
+					(collision.center.x + collision.x) : (pNewMesh->collision.center.x + pNewMesh->collision.x);
+				min = (collision.center.x - collision.x) < (pNewMesh->collision.center.x - pNewMesh->collision.x) ? \
+					(collision.center.x - collision.x) : (pNewMesh->collision.center.x - pNewMesh->collision.x);
+				collision.center.x = (max + min) / 2;
+				collision.x = max - collision.center.x;
+				// y
+				max = (collision.center.y + collision.y) > (pNewMesh->collision.center.y + pNewMesh->collision.y) ? \
+					(collision.center.y + collision.y) : (pNewMesh->collision.center.y + pNewMesh->collision.y);
+				min = (collision.center.y - collision.y) < (pNewMesh->collision.center.y - pNewMesh->collision.y) ? \
+					(collision.center.y - collision.y) : (pNewMesh->collision.center.y - pNewMesh->collision.y);
+				collision.center.y = (max + min) / 2;
+				collision.y = max - collision.center.y;
+				// z
+				max = (collision.center.z + collision.z) > (pNewMesh->collision.center.z + pNewMesh->collision.z) ? \
+					(collision.center.z + collision.z) : (pNewMesh->collision.center.z + pNewMesh->collision.z);
+				min = (collision.center.z - collision.z) < (pNewMesh->collision.center.z - pNewMesh->collision.z) ? \
+					(collision.center.z - collision.z) : (pNewMesh->collision.center.z - pNewMesh->collision.z);
+				collision.center.z = (max + min) / 2;
+				collision.z = max - collision.center.z;
+			}
+		}
+	}
 
+}
 
-
-
-
-
-
+void Model::setNode(aiNode* pNode, Mesh** ppMesh)
+{
+	
+}
 
 //---------------------------------------------------------------------------
 //	Class Object

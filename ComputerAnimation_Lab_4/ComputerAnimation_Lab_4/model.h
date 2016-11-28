@@ -42,12 +42,13 @@ class Mesh
 		DirectX::XMFLOAT3 posInParent;
 		DirectX::XMFLOAT3 posRoot;
 		DirectX::XMFLOAT3 angle;
-		std::vector<Mesh> child;
+		//std::vector<Mesh> child;
 		D3D_PRIMITIVE_TOPOLOGY layout = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
 		CollisionBlock collision;
+		DirectX::XMMATRIX worldMatrixToParent;
 
-		Mesh(ID3D11Device*, ID3D11DeviceContext*, const aiMesh*);
+		Mesh(ID3D11Device*, ID3D11DeviceContext*, const aiMesh*, float sizeModify = 1.0);
 		~Mesh();
 		void readTextureFromFile(LPWSTR file);
 
@@ -59,7 +60,16 @@ class Mesh
 
 class Model
 {
-
+	public:
+		std::vector<Mesh*> meshes;
+		Model(ID3D11Device*, ID3D11DeviceContext*, const aiScene*, LPSTR path, float sizeModify = 1.0);
+		CollisionBlock collision;
+	private:
+		aiMesh** ppMesh;
+		aiMaterial** ppMaterial;
+		void setNode(aiNode*,Mesh**);
+		ID3D11Device* pDevice;
+		ID3D11DeviceContext* pContext;
 };
 
 class Force
@@ -93,7 +103,7 @@ class Motion
 class Object
 {
 	public:
-		Mesh* pMesh;
+		Model* pModel;
 		DirectX::XMFLOAT3 pos;
 		DirectX::XMFLOAT3 angle;
 		Motion motion;

@@ -110,10 +110,12 @@ float Distance(DirectX::XMFLOAT3 f1, DirectX::XMFLOAT3 f2)
 
 bool Controller::checkCollisionAndSetForce(Object* pObj1, Object* pObj2)
 {
+	/*
 	Force force;
 	float reflect = 0.99;
 	if(pObj2->Flag != Object::GROUND)
 	{
+		
 		if(pObj1->pMesh->collision.type == CollisionBlock::SPHERE && pObj2->pMesh->collision.type == CollisionBlock::SPHERE)
 		{
 			float distance = Distance(pObj1->pos,pObj2->pos);
@@ -173,6 +175,7 @@ bool Controller::checkCollisionAndSetForce(Object* pObj1, Object* pObj2)
 				pObj1->motion.rotation.x = -pObj1->motion.speed.y;
 			}
 		}
+		
 	}
 	else
 	{
@@ -230,6 +233,6 @@ bool Controller::checkCollisionAndSetForce(Object* pObj1, Object* pObj2)
 		force.Flag = Force::COLLISION;
 		pObj1->motion.forces.push_back(force);
 	}
-	
+	*/
 	return true;
 }

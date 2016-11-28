@@ -17,13 +17,15 @@ struct VS_OUTPUT
 cbuffer ConstantBuffer : register(b0)
 {
 	matrix World;
-	matrix View;
+	matrix ViewCamera;
+	matrix ViewLight;
 	matrix Projection;
 	float3 CameraPos;
 	float3 LightPos;
 }
 
 Texture2D textureFromFile : register(t0);
+Texture2D textureShadow	  :	register(t1);
 SamplerState samplerState : register(s0);
 
 //--------------------------------------------------------------------------------------
@@ -42,9 +44,12 @@ float4 PS(VS_OUTPUT input) : SV_Target
 	float3 V = normalize(Ep - P);
 	float3 R = 2* dot(L,N)*N-L;
 
-//	float3 cColor = textureFromFile.Sample(samplerState, input.UV).xyz;
+	float4 PinLight = input.PosOld;
+	PinLight = mul(PinLight, ViewLight);
+	PinLight = mul(PinLight, Projection);
+	PinLight = PinLight / PinLight.w;
+
 	float3 cColor = textureFromFile.Sample(samplerState, input.TextureUV).xyz;
-//	float3 cColor = float3(1.0,0,0);
 
 	float diffuse,specular,ambient,iColor;
 
@@ -56,8 +61,18 @@ float4 PS(VS_OUTPUT input) : SV_Target
 		specular = specular * dot(R,V);
 	}
 	specular = max(0, specular)*ks;
+	
+	PinLight.x = PinLight.x / 2 + 0.5;
+	PinLight.y = -PinLight.y / 2 + 0.5;
 
-	iColor = diffuse + specular + ambient;
+	if(PinLight.z > textureShadow.Sample(samplerState, PinLight.xy).x+0.000001)
+	{
+		iColor = ambient;
+	}
+	else
+	{
+		iColor = diffuse + specular + ambient;
+	}
 	
 	return float4(cColor * iColor,1.0);
 }

@@ -30,16 +30,12 @@ struct VS_OUTPUT
 //--------------------------------------------------------------------------------------
 // Vertex Shader
 //--------------------------------------------------------------------------------------
-VS_OUTPUT VS(float4 Pos : POSITION, float2 Tex : TEXTURE, float3 Normal : NORMAL)
+VS_OUTPUT main(float4 Pos : POSITION, float2 Tex : TEXTURE, float3 Normal : NORMAL)
 {
 	VS_OUTPUT output = (VS_OUTPUT)0;
 	output.Pos = mul(Pos, World);
-	output.PosOld = output.Pos;
-	output.Pos = mul(output.Pos, ViewCamera);
+	output.Pos = mul(output.Pos, ViewLight);
 	output.Pos = mul(output.Pos, Projection);
-	output.TextureUV = Tex;
-	output.Normal = mul(Normal, World);
-	output.UV = Pos.xz;
 	return output;
 }
 
