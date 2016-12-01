@@ -1,42 +1,37 @@
 #include "controller.h"
 using namespace DirectX;
+
+#define PI 3.14159265359f
+#define D(x) (x / PI * 180.0f)
+
 void Controller::next(std::vector<Object*>* pObjects)
 {
 	this->pObjects = pObjects;
 	collision();
 	speed();
 	move();
+	clearForce();
+}
+
+void Controller::clearForce()
+{
+	for(int i = 0; i < pObjects->size(); i++)
+	{
+		if((*pObjects)[i]->motion.fixed)
+			continue;
+		(*pObjects)[i]->motion.forces.clear();
+	}
 }
 
 void Controller::collision()
 {
-	Object* current;
 	for(int i = 0; i < pObjects->size(); i++)
 	{
-		current = (*pObjects)[i];
-		if(current->Flag==Object::GROUND)continue;
-		bool hasUserForce = false;
-		if(i==1)
-		for(int j = 0; j < (*pObjects)[1]->motion.forces.size(); j++)
+		for(int j = i+1; j < pObjects->size(); j++)
 		{
-			if((*pObjects)[1]->motion.forces[j].Flag == Force::USER)
-			{
-				userForce = (*pObjects)[1]->motion.forces[j];
-				hasUserForce = true;
-			}
-		}
-
-		current->motion.forces.clear();
-		for(int j = 0; j < pObjects->size(); j++)
-		{
-			if(i == j)continue;
 			checkCollisionAndSetForce((*pObjects)[i], (*pObjects)[j]);
 		}
-
-		if(hasUserForce)
-		{
-			(*pObjects)[1]->motion.forces.push_back(userForce);
-		}
+		checkBorderAndSetGravity((*pObjects)[i]);
 	}
 }
 
@@ -44,41 +39,57 @@ void Controller::speed()
 {
 	for(int i = 0; i < pObjects->size(); i++)
 	{
-		Object* pObject = (*pObjects)[i];
-		if(pObject->Flag == Object::GROUND)continue;
-
-		XMVECTOR forceCollision = XMVectorSet(0, 0, 0, 0);
-		XMVECTOR forceSuspend = XMVectorSet(0, 0, 0, 0);
-		XMVECTOR currentForce;
-
-		for(int j = 0; j < pObject->motion.forces.size(); j++)
-		{
-			currentForce = XMLoadFloat3(&pObject->motion.forces[j].direction);
-			if(pObject->motion.forces[j].Flag == Force::SUSPEND)
-				forceSuspend += currentForce;
-			else
-				forceCollision += currentForce;
-		}
-
-		XMFLOAT3 forceSuspendF3;
-		XMStoreFloat3(&forceSuspendF3, forceSuspend);
-
-		if(forceSuspendF3.y < 0.5)
-			forceCollision += XMLoadFloat3(&pObject->motion.gravity);
-
-		forceCollision /= pObject->motion.mess;
-		forceCollision += XMLoadFloat3(&pObject->motion.speed);
-
-		XMStoreFloat3(&pObject->motion.speed, forceCollision);
-
-		//pObject->motion.speed.x *= 0.99;
-		//pObject->motion.speed.y *= 0.99;
-		//pObject->motion.speed.z *= 0.99;
-
-		//pObject->motion.rotation.x *= 0.999;
-		//pObject->motion.rotation.y *= 0.999;
-		//pObject->motion.rotation.z *= 0.999;
+		setSpeed((*pObjects)[i]);
 	}
+}
+
+void Controller::setSpeed(Object* pObj)
+{
+	if(pObj->motion.fixed)return;
+
+	XMFLOAT3 forceCollision = {0,0,0};
+	XMVECTOR forceSuspend = XMVectorSet(0, 0, 0, 0);
+	XMVECTOR currentForce;
+
+	for(int j = 0; j < pObj->motion.forces.size(); j++)
+	{
+		forceCollision.x += pObj->motion.forces[j].direction.x;
+		forceCollision.y += pObj->motion.forces[j].direction.y;
+		forceCollision.z += pObj->motion.forces[j].direction.z;
+	}
+
+	pObj->motion.speed.x += forceCollision.x / pObj->motion.mess;
+	pObj->motion.speed.y += forceCollision.y / pObj->motion.mess;
+	pObj->motion.speed.z += forceCollision.z / pObj->motion.mess;
+
+	friction(pObj);
+}
+
+void Controller::friction(Object* pObj)
+{
+	if(pObj->motion.speed.x < pObj->motion.friction && pObj->motion.speed.x > -pObj->motion.friction)
+		pObj->motion.speed.x = 0;
+	else
+		if(pObj->motion.speed.x > 0)
+			pObj->motion.speed.x -= pObj->motion.friction;
+		else
+			pObj->motion.speed.x += pObj->motion.friction;
+
+	if(pObj->motion.speed.y < pObj->motion.friction && pObj->motion.speed.y > -pObj->motion.friction)
+		pObj->motion.speed.y = 0;
+	else
+		if(pObj->motion.speed.y > 0)
+			pObj->motion.speed.y -= pObj->motion.friction;
+		else
+			pObj->motion.speed.y += pObj->motion.friction;
+
+	if(pObj->motion.speed.z < pObj->motion.friction && pObj->motion.speed.z > -pObj->motion.friction)
+		pObj->motion.speed.z = 0;
+	else
+		if(pObj->motion.speed.z > 0)
+			pObj->motion.speed.z -= pObj->motion.friction;
+		else
+			pObj->motion.speed.z += pObj->motion.friction;
 }
 
 void Controller::move()
@@ -86,22 +97,57 @@ void Controller::move()
 	Object* pObject;
 	for(int i = 0; i < pObjects->size(); i++)
 	{
-		pObject = (*pObjects)[i];
-		if(pObject->Flag == Object::GROUND)continue;
-
-		pObject->pos.x += pObject->motion.speed.x;
-		if(pObject->motion.speed.y>0.02|| pObject->motion.speed.y<-0.02)
-			pObject->pos.y += pObject->motion.speed.y;
-		pObject->pos.z += pObject->motion.speed.z;
-
-		float rotationMul = 30;
-		pObject->angle.x += pObject->motion.rotation.x*rotationMul;
-		pObject->angle.y += pObject->motion.rotation.y*rotationMul;
-		pObject->angle.z += pObject->motion.rotation.z*rotationMul;
+		setMove((*pObjects)[i]);
 	}
 }
 
-float Distance(DirectX::XMFLOAT3 f1, DirectX::XMFLOAT3 f2)
+void Controller::setMove(Object* pObj)
+{
+	if(pObj->motion.fixed)return;
+	
+	if(pObj->motion.speed.x < -pObj->motion.friction || pObj->motion.speed.x > pObj->motion.friction)
+		pObj->pos.x += pObj->motion.speed.x;
+	if(pObj->motion.speed.y < -pObj->motion.friction || pObj->motion.speed.y > pObj->motion.friction)
+		pObj->pos.y += pObj->motion.speed.y;
+	if(pObj->motion.speed.z < -pObj->motion.friction || pObj->motion.speed.z > pObj->motion.friction)
+		pObj->pos.z += pObj->motion.speed.z;
+
+	XMVECTOR speedDirect = XMVector3Normalize(XMLoadFloat3(&pObj->motion.speed));
+	XMVECTOR UP = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+	XMVECTOR Left = XMVector3Normalize(XMVector3Cross(speedDirect, UP));
+	XMVECTOR Front = XMVector3Normalize(XMVector3Cross(UP, Left));
+	XMFLOAT3 angle;
+
+	
+	XMStoreFloat3( &angle, XMVector3AngleBetweenVectors(Front, speedDirect));
+	if(pObj->motion.speed.y>0)
+	{
+		pObj->angle.x = -D(angle.x);
+		if(pObj->motion.speed.x>-0.000001&&pObj->motion.speed.x<0.000001)
+			if(pObj->motion.speed.z>-0.000001&&pObj->motion.speed.z<0.000001)
+				pObj->angle.x = -90;
+	}
+	else
+	{
+		pObj->angle.x = D(angle.x);
+		if(pObj->motion.speed.x > -0.000001&&pObj->motion.speed.x < 0.000001)
+			if(pObj->motion.speed.z > -0.000001&&pObj->motion.speed.z < 0.000001)
+				pObj->angle.x = 90;
+	}
+
+	if(pObj->motion.speed.y > -0.000001&&pObj->motion.speed.y < 0.000001)
+		pObj->angle.x = 0;
+
+	XMStoreFloat3(&angle, XMVector3AngleBetweenVectors(XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f), speedDirect));
+
+	if(pObj->motion.speed.x>0)
+		pObj->angle.y = D(angle.x);
+	else
+		pObj->angle.y = -D(angle.x);
+	
+}
+
+float Controller::Distance(DirectX::XMFLOAT3 f1, DirectX::XMFLOAT3 f2)
 {
 	return sqrt((f1.x - f2.x) * (f1.x - f2.x) +
 		(f1.y - f2.y) * (f1.y - f2.y) +
@@ -110,129 +156,113 @@ float Distance(DirectX::XMFLOAT3 f1, DirectX::XMFLOAT3 f2)
 
 bool Controller::checkCollisionAndSetForce(Object* pObj1, Object* pObj2)
 {
-	/*
-	Force force;
-	float reflect = 0.99;
-	if(pObj2->Flag != Object::GROUND)
+	if(pObj1->motion.fixed || pObj2->motion.fixed)
+		return false;
+
+	float r;
+	r = Distance(pObj1->pos, pObj2->pos) * 5;
+	Force F;
+	F.direction.x = pObj1->pos.x - pObj2->pos.x;
+	F.direction.y = pObj1->pos.y - pObj2->pos.y;
+	F.direction.z = pObj1->pos.z - pObj2->pos.z;
+	float l;
+	l = Distance(F.direction, {0,0,0});
+	F.direction.x /= r*r*l;
+	F.direction.y /= r*r*l;
+	F.direction.z /= r*r*l;
+	F.Flag = Force::COLLISION;
+	pObj1->motion.forces.push_back(F);
+	F.direction.x *= -1;
+	F.direction.y *= -1;
+	F.direction.z *= -1;
+	pObj2->motion.forces.push_back(F);
+	return true;
+}
+
+bool Controller::checkBorderAndSetGravity(Object* pObj)
+{
+	if(pObj->motion.fixed)
+		return false;
+	Force gravity;
+	gravity.direction.x = pObj->motion.mess * pObj->motion.gravity.x;
+	gravity.direction.y = pObj->motion.mess * pObj->motion.gravity.y;
+	gravity.direction.z = pObj->motion.mess * pObj->motion.gravity.z;
+	gravity.Flag = gravity.COLLISION;
+
+	// down
+	if(pObj->pos.y > pObj->pModel->collision.y + border.yMin)
 	{
-		
-		if(pObj1->pMesh->collision.type == CollisionBlock::SPHERE && pObj2->pMesh->collision.type == CollisionBlock::SPHERE)
-		{
-			float distance = Distance(pObj1->pos,pObj2->pos);
-			if(distance > pObj1->pMesh->collision.x + pObj2->pMesh->collision.x+0.0001)
-				return false;
-
-			XMVECTOR forceDirection = XMVector3Normalize(XMLoadFloat3(&pObj1->pos) - XMLoadFloat3(&pObj2->pos));
-			XMVECTOR objSpeed = -XMLoadFloat3(&pObj1->motion.speed);
-			XMVECTOR OutputForce = XMVector3Dot(objSpeed, forceDirection)*forceDirection*pObj1->motion.mess*reflect;
-			XMStoreFloat3(&force.direction,OutputForce);
-			force.Flag = Force::COLLISION;
-			pObj1->motion.forces.push_back(force);
-
-			forceDirection *= (pObj1->pMesh->collision.x + pObj2->pMesh->collision.x - distance) * 0.1;
-			XMStoreFloat3(&force.direction, forceDirection);
-			force.Flag = Force::COLLISION;
-			pObj1->motion.forces.push_back(force);
-
-			objSpeed = XMLoadFloat3(&pObj2->motion.speed);
-			OutputForce = XMVector3Dot(objSpeed, forceDirection)*forceDirection*pObj2->motion.mess*reflect;
-			XMStoreFloat3(&force.direction, OutputForce);
-			force.Flag = Force::COLLISION;
-			pObj1->motion.forces.push_back(force);
-
-			//rotation
-			pObj1->motion.rotation.x = pObj1->motion.rotation.y = pObj1->motion.rotation.z = 0;
-			if(pObj2->pos.y - pObj1->pos.y > 0)
-			{
-				pObj1->motion.rotation.z = pObj1->motion.speed.x;
-				pObj1->motion.rotation.x = -pObj1->motion.speed.z;
-			}
-			else
-			{
-				pObj1->motion.rotation.z = -pObj1->motion.speed.x;
-				pObj1->motion.rotation.x = pObj1->motion.speed.z;
-			}
-
-			if(pObj2->pos.x - pObj1->pos.x < 0)
-			{
-				pObj1->motion.rotation.y = -pObj1->motion.speed.z;
-				pObj1->motion.rotation.z = -pObj1->motion.speed.y;
-			}
-			else
-			{
-				pObj1->motion.rotation.y = pObj1->motion.speed.z;
-				pObj1->motion.rotation.z = pObj1->motion.speed.y;
-			}
-
-			if(pObj2->pos.z - pObj1->pos.z > 0)
-			{
-				pObj1->motion.rotation.y = -pObj1->motion.speed.x;
-				pObj1->motion.rotation.x = pObj1->motion.speed.y;
-			}
-			else
-			{
-				pObj1->motion.rotation.y = pObj1->motion.speed.x;
-				pObj1->motion.rotation.x = -pObj1->motion.speed.y;
-			}
-		}
-		
+		pObj->motion.forces.push_back(gravity);
 	}
 	else
 	{
-		if(pObj1->pos.y - pObj2->pos.y > pObj1->pMesh->collision.x)
-			return false;
-
-		if(pObj1->motion.speed.y >= 0)
-			return false;
-
-		force.direction.y = -pObj1->motion.speed.y*pObj1->motion.mess*reflect * 2;
-		force.Flag = Force::COLLISION;
-		pObj1->motion.forces.push_back(force);
-
-		force.direction.y = 1;
-		force.Flag = Force::SUSPEND;
-		pObj1->motion.forces.push_back(force);
-
-		//rotation
-		pObj1->motion.rotation.x = pObj1->motion.rotation.y = pObj1->motion.rotation.z = 0;
+		if(pObj->motion.speed.y < 0)
 		{
-			pObj1->motion.rotation.z = -pObj1->motion.speed.x;
-			pObj1->motion.rotation.x = pObj1->motion.speed.z;
+			gravity.direction.y = -pObj->motion.speed.y*pObj->motion.mess * 2 * 0.98;
+			pObj->motion.forces.push_back(gravity);
 		}
-
-	}
-	
-	if(pObj1->pos.x > 10 && pObj1->motion.speed.x>0)
-	{
-		force.direction.x = force.direction.y = force.direction.z = 0;
-		force.direction.x = -pObj1->motion.speed.x*pObj1->motion.mess*reflect * 2;
-		force.Flag = Force::COLLISION;
-		pObj1->motion.forces.push_back(force);
 	}
 
-	if(pObj1->pos.x < -10 && pObj1->motion.speed.x<0)
+	// up
+	if(pObj->pos.y > border.yMax - pObj->pModel->collision.y)
 	{
-		force.direction.x = force.direction.y = force.direction.z = 0;
-		force.direction.x = -pObj1->motion.speed.x*pObj1->motion.mess*reflect * 2;
-		force.Flag = Force::COLLISION;
-		pObj1->motion.forces.push_back(force);
+		Force F;
+		if(pObj->motion.speed.y > 0)
+		{
+			F.direction.y = -pObj->motion.speed.y*pObj->motion.mess * 2 * 0.98;
+			F.Flag = F.COLLISION;
+			pObj->motion.forces.push_back(F);
+		}
 	}
 
-	if(pObj1->pos.z > 10 && pObj1->motion.speed.z>0)
+	// x+
+	if(pObj->pos.x > border.xMax)
 	{
-		force.direction.x = force.direction.y = force.direction.z = 0;
-		force.direction.z = -pObj1->motion.speed.z*pObj1->motion.mess*reflect * 2;
-		force.Flag = Force::COLLISION;
-		pObj1->motion.forces.push_back(force);
+		Force F;
+		if(pObj->motion.speed.x > 0)
+		{
+			F.direction.x = -pObj->motion.speed.x*pObj->motion.mess * 2 * 0.98;
+			F.Flag = F.COLLISION;
+			pObj->motion.forces.push_back(F);
+		}
 	}
 
-	if(pObj1->pos.z < -10 && pObj1->motion.speed.z<0)
+	// x-
+	if(pObj->pos.x < border.xMin)
 	{
-		force.direction.x = force.direction.y = force.direction.z = 0;
-		force.direction.z = -pObj1->motion.speed.z*pObj1->motion.mess*reflect * 2;
-		force.Flag = Force::COLLISION;
-		pObj1->motion.forces.push_back(force);
+		Force F;
+		if(pObj->motion.speed.x < 0)
+		{
+			F.direction.x = -pObj->motion.speed.x*pObj->motion.mess * 2 * 0.98;
+			F.Flag = F.COLLISION;
+			pObj->motion.forces.push_back(F);
+		}
 	}
-	*/
+
+	// z+
+	if(pObj->pos.z > border.zMax)
+	{
+		Force F;
+		if(pObj->motion.speed.z > 0)
+		{
+			F.direction.z = -pObj->motion.speed.z*pObj->motion.mess * 2 * 0.98;
+			F.Flag = F.COLLISION;
+			pObj->motion.forces.push_back(F);
+		}
+	}
+
+	// z-
+	if(pObj->pos.z < border.zMin)
+	{
+		Force F;
+		if(pObj->motion.speed.z < 0)
+		{
+			F.direction.z = -pObj->motion.speed.z*pObj->motion.mess * 2 * 0.98;
+			F.Flag = F.COLLISION;
+			pObj->motion.forces.push_back(F);
+		}
+	}
+
 	return true;
 }
+

@@ -126,28 +126,63 @@ void WinProcedure::initial()
 	Object* pNewObject = NULL;
 
 	Assimp::Importer importerTest;
-	const aiScene* sceneTest = importerTest.ReadFile("./model/2/man.3ds", aiProcess_Triangulate);
+	const aiScene* sceneTest = importerTest.ReadFile("./model/bird.3ds", aiProcess_Triangulate);
 
 	
 	pNewObject = new Object();
-	pNewObject->pModel = new Model(pDisplayer->getDevice(), pDisplayer->getContext(), sceneTest, "./model/1",0.01);
-	pNewObject->pModel->meshes[0]->readTextureFromFile(L"./model/2/2.bmp");
+	pNewObject->pModel = new Model(pDisplayer->getDevice(), pDisplayer->getContext(), sceneTest, "./model",0.1);
+	pNewObject->pModel->meshes[0]->readTextureFromFile(L"./model/bird.jpg");
 	pNewObject->motion.gravity.y = 0;
-	pNewObject->angle.x = -90;
-	pNewObject->pos.y = pNewObject->pModel->collision.z;
+	pNewObject->angle.x = 0;
+	pNewObject->pos.x = 0;
+	pNewObject->pos.y = 10;
+	pNewObject->pos.z = -10;
 	pNewObject->angle.z = 0;
+	pNewObject->motion.friction = 0.002;
 	objects.push_back(pNewObject);
+
+	for(int i = -4;i<5; i++)
+		for(int j = -4; j < 5; j++)
+		{
+			Object* copyObject = new Object();
+			*copyObject = *pNewObject;
+			copyObject->pos.x = i*5;
+			copyObject->pos.z = j * 5;
+			copyObject->pos.y = 10 +i+j;
+			objects.push_back(copyObject);
+		}
+
 	//*/
 	sceneTest = importerTest.ReadFile("./model/ground.nff", aiProcess_Triangulate| aiProcess_GenUVCoords | aiProcess_GenNormals);
 	pNewObject = new Object();
 	pNewObject->pModel = new Model(pDisplayer->getDevice(), pDisplayer->getContext(), sceneTest, "./model", 1);
-	pNewObject->pModel->meshes[0]->readTextureFromFile(L"./model/throwPillow.jpg");
+	pNewObject->pModel->meshes[0]->readTextureFromFile(L"./model/grass.jpg");
 	pNewObject->motion.gravity.y = 0;
-	pNewObject->angle.x = 0;
-	pNewObject->angle.y = 0;
-	pNewObject->angle.z = 0;
+	pNewObject->motion.fixed = true;
+	pNewObject->motion.friction = 0;
 	objects.push_back(pNewObject);
 	//*/
+
+
+	sceneTest = importerTest.ReadFile("./model/pillar.nff", aiProcess_Triangulate | aiProcess_GenUVCoords | aiProcess_GenNormals);
+	pNewObject = new Object();
+	pNewObject->pModel = new Model(pDisplayer->getDevice(), pDisplayer->getContext(), sceneTest, "./model", 1);
+	pNewObject->pModel->meshes[0]->readTextureFromFile(L"./model/marble.jpg");
+	pNewObject->motion.gravity.y = 0;
+	pNewObject->pos.y = pNewObject->pModel->collision.y;
+	pNewObject->motion.fixed = true;
+	pNewObject->motion.friction = 0;
+	objects.push_back(pNewObject);
+
+	SceneBorder border;
+	border.xMax = 500;
+	border.xMin = -500;
+	border.yMax = 500;
+	border.yMin = 0;
+	border.zMax = 500;
+	border.zMin = -500;
+
+	pController->setBorder(border);
 }
 
 Object* WinProcedure::createObjectFromMesh(Mesh* pMesh,
@@ -194,7 +229,7 @@ void WinProcedure::render60()
 	ULONGLONG cur = GetTickCount64();
 	if(Timer == 0)
 		Timer = cur;
-	if(cur - Timer > 1000 / 120.0)
+	if(cur - Timer > 1000.0 / 120.0)
 	{
 		Timer = cur;
 		pController->next(&objects);

@@ -39,7 +39,8 @@ VS_OUTPUT VS(float4 Pos : POSITION, float2 Tex : TEXTURE, float3 Normal : NORMAL
 	output.Pos = mul(output.Pos, Projection);
 	output.TextureUV = Tex;
 	output.Normal = mul(Normal, World);
-	output.UV = Pos.xz;
+	output.UV.x = Pos.x;
+	output.UV.y = Pos.z + Pos.y;
 	return output;
 }
 

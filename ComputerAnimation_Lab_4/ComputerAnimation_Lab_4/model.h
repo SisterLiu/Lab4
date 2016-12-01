@@ -93,8 +93,10 @@ class Motion
 		DirectX::XMFLOAT3 speed;
 		DirectX::XMFLOAT3 rotation;
 		DirectX::XMFLOAT3 gravity;
+		float friction;
 		float mess;
-		Motion():speed(0,0,0),rotation(0,0,0),gravity(0,-0.01,0), mess(1)
+		bool fixed;
+		Motion():speed(0,0,0),rotation(0,0,0),gravity(0,0,0), mess(1), fixed(false), friction(0)
 		{}
 
 		std::vector<Force> forces;

@@ -8,7 +8,7 @@ using namespace DirectX;
 void Dx11Displayer::render(std::vector<Object*>* pObjects)
 {
 	updateCamera();
-	//updateCamera2((*pObjects)[1]);
+	//updateCamera2((*pObjects)[0]);
 
 	//-------------------------------------
 	// Clear the back buffer
@@ -23,8 +23,8 @@ void Dx11Displayer::render(std::vector<Object*>* pObjects)
 	XMVECTOR Up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 	constantBuffer.mViewCamera = XMMatrixTranspose(XMMatrixLookAtLH(Eye, LookingAt, Up));
 
-	Eye = XMVectorSet(20.0f, 20.0f, 20.0f, 0.0f);
-	LookingAt = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+	Eye = XMVectorSet(70.0f, 100.0f, 100.0f, 0.0f);
+	LookingAt = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
 	constantBuffer.mViewLight = XMMatrixTranspose(XMMatrixLookAtLH(Eye, LookingAt, Up));
 	constantBuffer.cameraPos = eyePos;
 	constantBuffer.lightPos = Eye;
@@ -95,16 +95,16 @@ XMMATRIX Dx11Displayer::getWorldMatrixFromObject(Object* pObject)
 
 	XMFLOAT3 angleEular = pObject->angle;
 	XMMATRIX eularM;
-	//x rotate
-	eularM.r[0] = XMVectorSet(1.0f, 0.0f, 0.0f, 0.0f);
-	eularM.r[1] = XMVectorSet(0.0f, cos(R(angleEular.x)), -sin(R(angleEular.x)), 0.0f);
-	eularM.r[2] = XMVectorSet(0.0f, sin(R(angleEular.x)), cos(R(angleEular.x)), 0.0f);
-	eularM.r[3] = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
-	angleM = angleM * eularM;
 	//y rotate
 	eularM.r[0] = XMVectorSet(cos(R(angleEular.y)), 0.0f, sin(R(angleEular.y)), 0.0f);
 	eularM.r[1] = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 	eularM.r[2] = XMVectorSet(-sin(R(angleEular.y)), 0.0f, cos(R(angleEular.y)), 0.0f);
+	eularM.r[3] = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
+	angleM = angleM * eularM;
+	//x rotate
+	eularM.r[0] = XMVectorSet(1.0f, 0.0f, 0.0f, 0.0f);
+	eularM.r[1] = XMVectorSet(0.0f, cos(R(angleEular.x)), -sin(R(angleEular.x)), 0.0f);
+	eularM.r[2] = XMVectorSet(0.0f, sin(R(angleEular.x)), cos(R(angleEular.x)), 0.0f);
 	eularM.r[3] = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
 	angleM = angleM * eularM;
 	//z rotate
@@ -136,6 +136,8 @@ void Dx11Displayer::setRenderType(int type)
 		pDx11DeviceContext->PSSetShader(pDx11PixelShader, nullptr, 0);
 		pDx11DeviceContext->PSSetShaderResources(1, 1, &pDx11ShadowShaderResourceView);
 		pDx11DeviceContext->RSSetViewports(1, &viewPort);
+		pDx11DeviceContext->PSSetSamplers(0, 1, &pDx11SamplerState);
+		pDx11DeviceContext->PSSetSamplers(1, 1, &pDx11ShadowSamplerState);
 	}
 }
 
@@ -143,7 +145,7 @@ void Dx11Displayer::updateCamera()
 {
 	eyePos;
 	eyeDirect;
-	float speed = 0.1;
+	float speed = 0.3;
 	float rotation = 0.02;
 	XMVECTOR UP = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 	XMVECTOR Left = XMVector3Cross(eyeDirect, UP);
@@ -198,7 +200,7 @@ void Dx11Displayer::updateCamera2(Object* pObject)
 {
 	eyePos;
 	eyeDirect;
-	float speed = 0.002;
+	float speed = 0.04;
 	float rotation = 0.02;
 	XMVECTOR UP = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 	XMVECTOR Left = XMVector3Cross(eyeDirect, UP);
@@ -212,7 +214,7 @@ void Dx11Displayer::updateCamera2(Object* pObject)
 
 	if(cameraControl.GO_UP)
 	{
-		userForceV += UP*0.007;
+		userForceV += UP*0.07;
 	}
 	if(cameraControl.GO_DOWN)
 	{
@@ -572,6 +574,26 @@ Dx11Displayer::Dx11Displayer(HWND hwnd)
 	pDx11DeviceContext->PSSetSamplers(0, 1, &pDx11SamplerState);
 
 	//-------------------------------------------------------------------------
+	//	Shadow Texture Sampler
+	//-------------------------------------------------------------------------
+	D3D11_SAMPLER_DESC shadowSamplerDescribe;
+	ZeroMemory(&shadowSamplerDescribe, sizeof(shadowSamplerDescribe));
+	shadowSamplerDescribe.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+	shadowSamplerDescribe.AddressU = D3D11_TEXTURE_ADDRESS_BORDER;
+	shadowSamplerDescribe.AddressV = D3D11_TEXTURE_ADDRESS_BORDER;
+	shadowSamplerDescribe.AddressW = D3D11_TEXTURE_ADDRESS_BORDER;
+	shadowSamplerDescribe.BorderColor[0] = 1;
+	shadowSamplerDescribe.BorderColor[1] = 1;
+	shadowSamplerDescribe.BorderColor[2] = 1;
+	shadowSamplerDescribe.BorderColor[3] = 1;
+	shadowSamplerDescribe.ComparisonFunc = D3D11_COMPARISON_NEVER;
+	shadowSamplerDescribe.MaxLOD = 4;
+	shadowSamplerDescribe.MinLOD = 0;
+
+	//	Create SamplerState
+	pDx11Device->CreateSamplerState(&shadowSamplerDescribe, &pDx11ShadowSamplerState);
+
+	//-------------------------------------------------------------------------
 	//	Constant Buffer
 	//-------------------------------------------------------------------------
 	D3D11_BUFFER_DESC bd;
@@ -590,7 +612,7 @@ Dx11Displayer::Dx11Displayer(HWND hwnd)
 	constantBuffer.mWorld = XMMatrixIdentity();
 
 	// Initialize the view matrix
-	XMVECTOR Eye = XMVectorSet(10.0f, 5.0f, 0.0f, 0.0f);
+	XMVECTOR Eye = XMVectorSet(40.0f, 5.0f, -10.0f, 0.0f);
 	XMVECTOR LookingAt = XMVectorSet(0.0f, -5.0f, 0.0f, 0.0f);
 	XMVECTOR Up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 	constantBuffer.mViewCamera = XMMatrixTranspose(XMMatrixLookAtLH(Eye, LookingAt, Up));
@@ -618,17 +640,31 @@ Dx11Displayer::Dx11Displayer(HWND hwnd)
 
 Dx11Displayer::~Dx11Displayer()
 {
-	if(pDx11Device)				pDx11Device->Release();
-	if(pDx11DeviceContext)		pDx11DeviceContext->Release();
-	if(pDx11SwapChain)			pDx11SwapChain->Release();
-	if(pDx11RenderTargetView)	pDx11RenderTargetView->Release();
-	if(pDx11DepthStencil)		pDx11DepthStencil->Release();
-	if(pDx11DepthStencilView)	pDx11DepthStencilView->Release();
-	if(pDx11VertexShader)		pDx11VertexShader->Release();
-	if(pDx11PixelShader)		pDx11PixelShader->Release();
-	if(pDx11VertexLayout)		pDx11VertexLayout->Release();
-	if(pDx11ConstantBuffer)		pDx11ConstantBuffer->Release();
-	if(pDx11SamplerState)		pDx11SamplerState->Release();
+	if(pDx11Device)						pDx11Device->Release();
+	if(pDx11DeviceContext)				pDx11DeviceContext->Release();
+
+	if(pDx11SwapChain)					pDx11SwapChain->Release();
+	if(pDx11RenderTargetView)			pDx11RenderTargetView->Release();
+
+	if(pDx11DepthStencil)				pDx11DepthStencil->Release();
+	if(pDx11DepthStencilView)			pDx11DepthStencilView->Release();
+
+	if(pDx11Shadow)						pDx11Shadow->Release();
+	if(pDx11ShadowView)					pDx11ShadowView->Release();
+	if(pDx11ShadowShaderResourceView)	pDx11ShadowShaderResourceView->Release();
+	if(pDx11ShadowSamplerState)			pDx11ShadowSamplerState->Release();
+
+	if(pDx11ShadowVertexShader)			pDx11ShadowVertexShader->Release();
+	if(pDx11ShadowPixelShader)			pDx11ShadowPixelShader->Release();
+	if(pDx11ShadowVertexLayout)			pDx11ShadowVertexLayout->Release();
+
+	if(pDx11VertexShader)				pDx11VertexShader->Release();
+	if(pDx11PixelShader)				pDx11PixelShader->Release();
+	if(pDx11VertexLayout)				pDx11VertexLayout->Release();
+
+
+	if(pDx11ConstantBuffer)				pDx11ConstantBuffer->Release();
+	if(pDx11SamplerState)				pDx11SamplerState->Release();
 }
 
 //--------------------------------------------------------------------------------------

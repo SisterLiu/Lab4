@@ -58,6 +58,7 @@ typedef class Dx11Displayer
 		ID3D11Texture2D*			pDx11Shadow;
 		ID3D11DepthStencilView*		pDx11ShadowView;
 		ID3D11ShaderResourceView*	pDx11ShadowShaderResourceView;
+		ID3D11SamplerState*			pDx11ShadowSamplerState;
 
 		ID3D11VertexShader*			pDx11ShadowVertexShader;
 		ID3D11PixelShader*			pDx11ShadowPixelShader;

@@ -27,6 +27,7 @@ cbuffer ConstantBuffer : register(b0)
 Texture2D textureFromFile : register(t0);
 Texture2D textureShadow	  :	register(t1);
 SamplerState samplerState : register(s0);
+SamplerState shadowSamplerState : register(s1);
 
 //--------------------------------------------------------------------------------------
 // Pixel Shader
@@ -49,7 +50,14 @@ float4 PS(VS_OUTPUT input) : SV_Target
 	PinLight = mul(PinLight, Projection);
 	PinLight = PinLight / PinLight.w;
 
-	float3 cColor = textureFromFile.Sample(samplerState, input.TextureUV).xyz;
+	float2 texUV = input.TextureUV.xy;
+	if(input.TextureUV.x < 0.0001 && input.TextureUV.y < 0.0001)
+	{
+		texUV.x = input.UV.x/40;
+		texUV.y = input.UV.y/40;
+	}
+
+	float3 cColor = textureFromFile.Sample(samplerState, texUV).xyz;
 
 	float diffuse,specular,ambient,iColor;
 
@@ -65,7 +73,7 @@ float4 PS(VS_OUTPUT input) : SV_Target
 	PinLight.x = PinLight.x / 2 + 0.5;
 	PinLight.y = -PinLight.y / 2 + 0.5;
 
-	if(PinLight.z > textureShadow.Sample(samplerState, PinLight.xy).x+0.000001)
+	if(PinLight.z > textureShadow.Sample(shadowSamplerState, PinLight.xy).x+0.000001)
 	{
 		iColor = ambient;
 	}
