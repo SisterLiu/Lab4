@@ -40,7 +40,11 @@ class Controller
 		void move();
 		void setMove(Object*);
 		void clearForce();
+
+		void center();
+		bool setCenterForce(Object*);
 		Force userForce;
+		DirectX::XMFLOAT3 objectCenter;
 		bool checkCollisionAndSetForce(Object*, Object*);
 		bool checkBorderAndSetGravity(Object*);
 		float Distance(DirectX::XMFLOAT3 f1, DirectX::XMFLOAT3 f2);

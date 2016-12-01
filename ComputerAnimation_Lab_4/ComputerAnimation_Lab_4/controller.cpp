@@ -7,7 +7,28 @@ using namespace DirectX;
 void Controller::next(std::vector<Object*>* pObjects)
 {
 	this->pObjects = pObjects;
+
+	//	set Object center
+	objectCenter = {0,0,0};
+	int moveObjectCount = 0;
+	for(int i = 0; i < pObjects->size(); i++)
+	{
+		if((*pObjects)[i]->motion.fixed)
+			continue;
+		moveObjectCount++;
+		objectCenter.x += (*pObjects)[i]->pos.x;
+		objectCenter.y += (*pObjects)[i]->pos.y;
+		objectCenter.z += (*pObjects)[i]->pos.z;
+	}
+	if(moveObjectCount != 0)
+	{
+		objectCenter.x /= moveObjectCount;
+		objectCenter.y /= moveObjectCount;
+		objectCenter.z /= moveObjectCount;
+	}
+
 	collision();
+	center();
 	speed();
 	move();
 	clearForce();
@@ -32,6 +53,7 @@ void Controller::collision()
 			checkCollisionAndSetForce((*pObjects)[i], (*pObjects)[j]);
 		}
 		checkBorderAndSetGravity((*pObjects)[i]);
+		setCenterForce((*pObjects)[i]);
 	}
 }
 
@@ -61,6 +83,17 @@ void Controller::setSpeed(Object* pObj)
 	pObj->motion.speed.x += forceCollision.x / pObj->motion.mess;
 	pObj->motion.speed.y += forceCollision.y / pObj->motion.mess;
 	pObj->motion.speed.z += forceCollision.z / pObj->motion.mess;
+
+	//	Limit Speed
+	XMVECTOR speedV = XMLoadFloat3(&pObj->motion.speed);
+	XMFLOAT3 speed3;
+	XMStoreFloat3(&speed3, XMVector3Length(speedV));
+	if(speed3.x > 1)
+	{
+		speedV = XMVector3Normalize(speedV);
+		speedV *= 1;
+		XMStoreFloat3(&pObj->motion.speed, speedV);
+	}
 
 	friction(pObj);
 }
@@ -118,7 +151,7 @@ void Controller::setMove(Object* pObj)
 	XMVECTOR Front = XMVector3Normalize(XMVector3Cross(UP, Left));
 	XMFLOAT3 angle;
 
-	
+
 	XMStoreFloat3( &angle, XMVector3AngleBetweenVectors(Front, speedDirect));
 	if(pObj->motion.speed.y>0)
 	{
@@ -159,23 +192,57 @@ bool Controller::checkCollisionAndSetForce(Object* pObj1, Object* pObj2)
 	if(pObj1->motion.fixed || pObj2->motion.fixed)
 		return false;
 
-	float r;
-	r = Distance(pObj1->pos, pObj2->pos) * 5;
+	if(Distance(pObj1->pos, pObj2->pos) > 15)
+		return false;
+
+	XMVECTOR forceV;
+	forceV = XMLoadFloat3(&pObj1->pos) - XMLoadFloat3(&pObj2->pos);
+	XMVECTOR r;
+	r = XMVector3Length(forceV) ;
+	forceV = XMVector3Normalize(forceV);
 	Force F;
-	F.direction.x = pObj1->pos.x - pObj2->pos.x;
-	F.direction.y = pObj1->pos.y - pObj2->pos.y;
-	F.direction.z = pObj1->pos.z - pObj2->pos.z;
-	float l;
-	l = Distance(F.direction, {0,0,0});
-	F.direction.x /= r*r*l;
-	F.direction.y /= r*r*l;
-	F.direction.z /= r*r*l;
-	F.Flag = Force::COLLISION;
+	XMFLOAT3 angle;
+
+	//	Object 1
+	XMStoreFloat3(&angle, XMVector3AngleBetweenVectors(forceV, -XMLoadFloat3(&pObj1->motion.speed)));
+	if(D(angle.x) < 30)
+	{
+		XMVECTOR bufferForce;
+		bufferForce = XMVector3Cross( XMLoadFloat3(&pObj1->motion.speed), forceV);
+		bufferForce = XMVector3Cross(bufferForce, XMLoadFloat3(&pObj1->motion.speed));
+		bufferForce = XMVector3Normalize(bufferForce);
+		XMStoreFloat3(&F.direction, bufferForce / r / r);
+	}
+	else
+	{
+		XMVECTOR bufferForce;
+		bufferForce = XMVector3Cross(XMLoadFloat3(&pObj1->motion.speed), forceV);
+		bufferForce = XMVector3Cross(bufferForce, XMLoadFloat3(&pObj1->motion.speed));
+		bufferForce = XMVector3Normalize(bufferForce);
+		XMStoreFloat3(&F.direction, forceV / r / r/ 10);
+	}
 	pObj1->motion.forces.push_back(F);
-	F.direction.x *= -1;
-	F.direction.y *= -1;
-	F.direction.z *= -1;
+
+	//	Object 2
+	XMStoreFloat3(&angle, XMVector3AngleBetweenVectors(forceV, XMLoadFloat3(&pObj2->motion.speed)));
+	if(D(angle.x) < 30)
+	{
+		XMVECTOR bufferForce;
+		bufferForce = XMVector3Cross(XMLoadFloat3(&pObj2->motion.speed), -forceV);
+		bufferForce = XMVector3Cross(bufferForce, XMLoadFloat3(&pObj2->motion.speed));
+		bufferForce = XMVector3Normalize(bufferForce);
+		XMStoreFloat3(&F.direction, bufferForce / r / r);
+	}
+	else
+	{
+		XMVECTOR bufferForce;
+		bufferForce = XMVector3Cross(XMLoadFloat3(&pObj2->motion.speed), -forceV);
+		bufferForce = XMVector3Cross(bufferForce, XMLoadFloat3(&pObj2->motion.speed));
+		bufferForce = XMVector3Normalize(bufferForce);
+		XMStoreFloat3(&F.direction, bufferForce / r / r / 10);
+	}
 	pObj2->motion.forces.push_back(F);
+
 	return true;
 }
 
@@ -204,7 +271,7 @@ bool Controller::checkBorderAndSetGravity(Object* pObj)
 	}
 
 	// up
-	if(pObj->pos.y > border.yMax - pObj->pModel->collision.y)
+	if(pObj->pos.y > border.yMax)
 	{
 		Force F;
 		if(pObj->motion.speed.y > 0)
@@ -266,3 +333,49 @@ bool Controller::checkBorderAndSetGravity(Object* pObj)
 	return true;
 }
 
+void Controller::center()
+{
+	for(int i = 0; i < pObjects->size(); i++)
+	{
+		if((*pObjects)[i]->motion.fixed)
+			continue;
+		setCenterForce((*pObjects)[i]);
+	}
+}
+
+bool Controller::setCenterForce(Object* pObj)
+{
+	if(pObj->motion.fixed)
+		return false;
+
+	XMVECTOR allForce = XMVectorSet(0,0,0,0);
+	for(int i = 0; i < pObj->motion.forces.size(); i++)
+	{
+		allForce += XMLoadFloat3(&pObj->motion.forces[i].direction);
+	}
+
+	float r = Distance(pObj->pos, objectCenter);
+	bool hasCenterForce = true;
+
+	XMVECTOR centerForceUnit = XMVector3Normalize(XMLoadFloat3(&objectCenter) - XMLoadFloat3(&pObj->pos));
+	XMFLOAT3 angle;
+	
+	XMStoreFloat3(&angle, XMVector3AngleBetweenVectors(XMLoadFloat3(&pObj->motion.speed), centerForceUnit));
+	if(D(angle.x) < 70)
+		hasCenterForce = false;
+	
+
+	for(int i = 0; i < pObj->motion.forces.size(); i++)
+	{
+		XMStoreFloat3(&angle, XMVector3AngleBetweenVectors(allForce, XMLoadFloat3(&pObj->motion.forces[i].direction)));
+		if(D(angle.x) > 90)
+			hasCenterForce = false;
+	}
+
+	centerForceUnit *= r*0.01;
+	Force centerForce;
+	XMStoreFloat3(&centerForce.direction, centerForceUnit);
+	if(hasCenterForce)
+		pObj->motion.forces.push_back(centerForce);
+	return true;
+}

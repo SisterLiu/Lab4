@@ -138,7 +138,8 @@ void WinProcedure::initial()
 	pNewObject->pos.y = 10;
 	pNewObject->pos.z = -10;
 	pNewObject->angle.z = 0;
-	pNewObject->motion.friction = 0.002;
+	pNewObject->motion.friction = 0.00;
+	pNewObject->motion.speed.x = 0.1;
 	objects.push_back(pNewObject);
 
 	for(int i = -4;i<5; i++)
@@ -146,7 +147,7 @@ void WinProcedure::initial()
 		{
 			Object* copyObject = new Object();
 			*copyObject = *pNewObject;
-			copyObject->pos.x = i*5;
+			copyObject->pos.x = i*5-50;
 			copyObject->pos.z = j * 5;
 			copyObject->pos.y = 10 +i+j;
 			objects.push_back(copyObject);
@@ -175,12 +176,12 @@ void WinProcedure::initial()
 	objects.push_back(pNewObject);
 
 	SceneBorder border;
-	border.xMax = 500;
-	border.xMin = -500;
-	border.yMax = 500;
+	border.xMax = 150;
+	border.xMin = -150;
+	border.yMax = 200;
 	border.yMin = 0;
-	border.zMax = 500;
-	border.zMin = -500;
+	border.zMax = 150;
+	border.zMin = -150;
 
 	pController->setBorder(border);
 }
