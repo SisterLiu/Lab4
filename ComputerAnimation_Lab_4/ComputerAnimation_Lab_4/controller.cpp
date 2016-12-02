@@ -52,7 +52,8 @@ void Controller::collision()
 		{
 			checkCollisionAndSetForce((*pObjects)[i], (*pObjects)[j]);
 		}
-		checkBorderAndSetGravity((*pObjects)[i]);
+		for(int j=0;j<borders.size();j++)
+			checkBorderAndSetGravity((*pObjects)[i],borders[j]);
 		setCenterForce((*pObjects)[i]);
 	}
 }
@@ -246,90 +247,102 @@ bool Controller::checkCollisionAndSetForce(Object* pObj1, Object* pObj2)
 	return true;
 }
 
-bool Controller::checkBorderAndSetGravity(Object* pObj)
+bool Controller::checkBorderAndSetGravity(Object* pObj, SceneBorder border)
 {
 	if(pObj->motion.fixed)
 		return false;
-	Force gravity;
-	gravity.direction.x = pObj->motion.mess * pObj->motion.gravity.x;
-	gravity.direction.y = pObj->motion.mess * pObj->motion.gravity.y;
-	gravity.direction.z = pObj->motion.mess * pObj->motion.gravity.z;
-	gravity.Flag = gravity.COLLISION;
 
-	// down
-	if(pObj->pos.y > pObj->pModel->collision.y + border.yMin)
+	if(border.type == SceneBorder::BORDER)
 	{
-		pObj->motion.forces.push_back(gravity);
-	}
-	else
-	{
-		if(pObj->motion.speed.y < 0)
+		Force gravity;
+		gravity.direction.x = pObj->motion.mess * pObj->motion.gravity.x;
+		gravity.direction.y = pObj->motion.mess * pObj->motion.gravity.y;
+		gravity.direction.z = pObj->motion.mess * pObj->motion.gravity.z;
+		gravity.Flag = gravity.COLLISION;
+
+		// down
+		if(pObj->pos.y > pObj->pModel->collision.y + border.yMin)
 		{
-			gravity.direction.y = -pObj->motion.speed.y*pObj->motion.mess * 2 * 0.98;
 			pObj->motion.forces.push_back(gravity);
 		}
-	}
-
-	// up
-	if(pObj->pos.y > border.yMax)
-	{
-		Force F;
-		if(pObj->motion.speed.y > 0)
+		else
 		{
-			F.direction.y = -pObj->motion.speed.y*pObj->motion.mess * 2 * 0.98;
-			F.Flag = F.COLLISION;
-			pObj->motion.forces.push_back(F);
+			if(pObj->motion.speed.y < 0)
+			{
+				gravity.direction.y = -pObj->motion.speed.y*pObj->motion.mess * 2 * 0.98;
+				pObj->motion.forces.push_back(gravity);
+			}
+		}
+
+		// up
+		if(pObj->pos.y > border.yMax)
+		{
+			Force F;
+			if(pObj->motion.speed.y > 0)
+			{
+				F.direction.y = -pObj->motion.speed.y*pObj->motion.mess * 2 * 0.98;
+				F.Flag = F.COLLISION;
+				pObj->motion.forces.push_back(F);
+			}
+		}
+
+		// x+
+		if(pObj->pos.x > border.xMax)
+		{
+			Force F;
+			if(pObj->motion.speed.x > 0)
+			{
+				F.direction.x = -pObj->motion.speed.x*pObj->motion.mess * 2 * 0.98;
+				F.Flag = F.COLLISION;
+				pObj->motion.forces.push_back(F);
+			}
+		}
+
+		// x-
+		if(pObj->pos.x < border.xMin)
+		{
+			Force F;
+			if(pObj->motion.speed.x < 0)
+			{
+				F.direction.x = -pObj->motion.speed.x*pObj->motion.mess * 2 * 0.98;
+				F.Flag = F.COLLISION;
+				pObj->motion.forces.push_back(F);
+			}
+		}
+
+		// z+
+		if(pObj->pos.z > border.zMax)
+		{
+			Force F;
+			if(pObj->motion.speed.z > 0)
+			{
+				F.direction.z = -pObj->motion.speed.z*pObj->motion.mess * 2 * 0.98;
+				F.Flag = F.COLLISION;
+				pObj->motion.forces.push_back(F);
+			}
+		}
+
+		// z-
+		if(pObj->pos.z < border.zMin)
+		{
+			Force F;
+			if(pObj->motion.speed.z < 0)
+			{
+				F.direction.z = -pObj->motion.speed.z*pObj->motion.mess * 2 * 0.98;
+				F.Flag = F.COLLISION;
+				pObj->motion.forces.push_back(F);
+			}
 		}
 	}
 
-	// x+
-	if(pObj->pos.x > border.xMax)
+	if(border.type == SceneBorder::PILLAR)
 	{
-		Force F;
-		if(pObj->motion.speed.x > 0)
-		{
-			F.direction.x = -pObj->motion.speed.x*pObj->motion.mess * 2 * 0.98;
-			F.Flag = F.COLLISION;
-			pObj->motion.forces.push_back(F);
-		}
-	}
+		float rPillar = (border.xMax - border.xMin) / 2;
+		float xCenter = (border.xMax + border.xMin) / 2;
+		float zCenter = (border.zMax + border.zMin) / 2;
 
-	// x-
-	if(pObj->pos.x < border.xMin)
-	{
 		Force F;
-		if(pObj->motion.speed.x < 0)
-		{
-			F.direction.x = -pObj->motion.speed.x*pObj->motion.mess * 2 * 0.98;
-			F.Flag = F.COLLISION;
-			pObj->motion.forces.push_back(F);
-		}
 	}
-
-	// z+
-	if(pObj->pos.z > border.zMax)
-	{
-		Force F;
-		if(pObj->motion.speed.z > 0)
-		{
-			F.direction.z = -pObj->motion.speed.z*pObj->motion.mess * 2 * 0.98;
-			F.Flag = F.COLLISION;
-			pObj->motion.forces.push_back(F);
-		}
-	}
-
-	// z-
-	if(pObj->pos.z < border.zMin)
-	{
-		Force F;
-		if(pObj->motion.speed.z < 0)
-		{
-			F.direction.z = -pObj->motion.speed.z*pObj->motion.mess * 2 * 0.98;
-			F.Flag = F.COLLISION;
-			pObj->motion.forces.push_back(F);
-		}
-	}
-
 	return true;
 }
 

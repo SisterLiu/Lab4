@@ -24,7 +24,7 @@ void Dx11Displayer::render(std::vector<Object*>* pObjects)
 	constantBuffer.mViewCamera = XMMatrixTranspose(XMMatrixLookAtLH(Eye, LookingAt, Up));
 
 	Eye = XMVectorSet(70.0f, 100.0f, 100.0f, 0.0f);
-	LookingAt = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
+	LookingAt = XMVectorSet(40.0f, 0.0f, 40.0f, 0.0f);
 	constantBuffer.mViewLight = XMMatrixTranspose(XMMatrixLookAtLH(Eye, LookingAt, Up));
 	constantBuffer.cameraPos = eyePos;
 	constantBuffer.lightPos = Eye;

@@ -163,7 +163,14 @@ void WinProcedure::initial()
 	pNewObject->motion.friction = 0;
 	objects.push_back(pNewObject);
 	//*/
-
+	SceneBorder border;
+	border.xMax = 150;
+	border.xMin = -150;
+	border.yMax = 200;
+	border.yMin = 0;
+	border.zMax = 150;
+	border.zMin = -150;
+	pController->setBorder(border);
 
 	sceneTest = importerTest.ReadFile("./model/pillar.nff", aiProcess_Triangulate | aiProcess_GenUVCoords | aiProcess_GenNormals);
 	pNewObject = new Object();
@@ -175,14 +182,13 @@ void WinProcedure::initial()
 	pNewObject->motion.friction = 0;
 	objects.push_back(pNewObject);
 
-	SceneBorder border;
-	border.xMax = 150;
-	border.xMin = -150;
-	border.yMax = 200;
-	border.yMin = 0;
-	border.zMax = 150;
-	border.zMin = -150;
-
+	border.xMax = pNewObject->pos.x + pNewObject->pModel->collision.x;
+	border.xMin = pNewObject->pos.x - pNewObject->pModel->collision.x;
+	border.yMax = pNewObject->pos.y + pNewObject->pModel->collision.y;
+	border.yMin = pNewObject->pos.y - pNewObject->pModel->collision.y;
+	border.zMax = pNewObject->pos.z + pNewObject->pModel->collision.z;
+	border.zMin = pNewObject->pos.z - pNewObject->pModel->collision.z;
+	border.type = SceneBorder::PILLAR;
 	pController->setBorder(border);
 }
 
