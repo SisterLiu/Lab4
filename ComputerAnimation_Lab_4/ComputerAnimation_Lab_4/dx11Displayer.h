@@ -27,6 +27,8 @@ struct CameraControl
 	bool TRUN_RIGHT;
 	bool TRUN_DOWN;
 	bool TRUN_UP;
+	bool CAMERA_FAR;
+	bool CAMERA_NEAR;
 };
 
 typedef class Dx11Displayer
@@ -40,6 +42,7 @@ typedef class Dx11Displayer
 
 		DirectX::XMVECTOR		eyePos;
 		DirectX::XMVECTOR		eyeDirect;
+		float					cameraDistance;
 		CameraControl			cameraControl;
 
 		ID3D11Device*			getDevice()	{return pDx11Device;}
@@ -76,9 +79,10 @@ typedef class Dx11Displayer
 		D3D11_VIEWPORT				viewPort;
 		D3D11_VIEWPORT				shadowViewPort;
 
+
 		HRESULT CompileShaderFromFile(WCHAR* szFileName, LPCSTR szEntryPoint, LPCSTR szShaderModel, ID3DBlob** ppBlobOut);
 		void updateCamera();
-		void updateCamera2(Object*);
+		void updateCamera2(std::vector<Object*>*);
 		void setRenderType(int type);
 
 		static const int SHADOW		= 0x01;

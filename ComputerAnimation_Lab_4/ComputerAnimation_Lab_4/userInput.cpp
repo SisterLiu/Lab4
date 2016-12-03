@@ -42,6 +42,12 @@ int UserInput::keyboard(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				case VK_RIGHT:
 					pDisplayer->cameraControl.TRUN_RIGHT = true;
 					break;
+				case 'R':
+					pDisplayer->cameraControl.CAMERA_NEAR = true;
+					break;
+				case 'F':
+					pDisplayer->cameraControl.CAMERA_FAR = true;
+					break;
 			}
 			break;
 		case WM_KEYUP:
@@ -76,6 +82,12 @@ int UserInput::keyboard(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					break;
 				case VK_RIGHT:
 					pDisplayer->cameraControl.TRUN_RIGHT = false;
+					break;
+				case 'R':
+					pDisplayer->cameraControl.CAMERA_NEAR = false;
+					break;
+				case 'F':
+					pDisplayer->cameraControl.CAMERA_FAR = false;
 					break;
 			}
 			break;

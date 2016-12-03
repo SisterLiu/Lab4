@@ -142,8 +142,8 @@ void WinProcedure::initial()
 	pNewObject->motion.speed.x = 0.1;
 	objects.push_back(pNewObject);
 
-	for(int i = -4;i<5; i++)
-		for(int j = -4; j < 5; j++)
+	for(int i = -5;i<5; i++)
+		for(int j = -5; j < 5; j++)
 		{
 			Object* copyObject = new Object();
 			*copyObject = *pNewObject;
@@ -164,14 +164,15 @@ void WinProcedure::initial()
 	objects.push_back(pNewObject);
 	//*/
 	SceneBorder border;
-	border.xMax = 150;
-	border.xMin = -150;
+	border.xMax = 350;
+	border.xMin = -350;
 	border.yMax = 200;
 	border.yMin = 0;
-	border.zMax = 150;
-	border.zMin = -150;
+	border.zMax = 350;
+	border.zMin = -350;
 	pController->setBorder(border);
 
+	//	Pillar 1
 	sceneTest = importerTest.ReadFile("./model/pillar.nff", aiProcess_Triangulate | aiProcess_GenUVCoords | aiProcess_GenNormals);
 	pNewObject = new Object();
 	pNewObject->pModel = new Model(pDisplayer->getDevice(), pDisplayer->getContext(), sceneTest, "./model", 1);
@@ -188,6 +189,40 @@ void WinProcedure::initial()
 	border.yMin = pNewObject->pos.y - pNewObject->pModel->collision.y;
 	border.zMax = pNewObject->pos.z + pNewObject->pModel->collision.z;
 	border.zMin = pNewObject->pos.z - pNewObject->pModel->collision.z;
+	border.type = SceneBorder::PILLAR;
+	pController->setBorder(border);
+
+	//	Pillar 2
+	
+	Object* copyObject = new Object();
+	*copyObject = *pNewObject;
+	copyObject->pos.x = 100;
+	copyObject->pos.z = 100;
+	objects.push_back(copyObject);
+
+	border.xMax = copyObject->pos.x + copyObject->pModel->collision.x;
+	border.xMin = copyObject->pos.x - copyObject->pModel->collision.x;
+	border.yMax = copyObject->pos.y + copyObject->pModel->collision.y;
+	border.yMin = copyObject->pos.y - copyObject->pModel->collision.y;
+	border.zMax = copyObject->pos.z + copyObject->pModel->collision.z;
+	border.zMin = copyObject->pos.z - copyObject->pModel->collision.z;
+	border.type = SceneBorder::PILLAR;
+	pController->setBorder(border);
+
+	//	Pillar 3
+
+	copyObject = new Object();
+	*copyObject = *pNewObject;
+	copyObject->pos.x = 80;
+	copyObject->pos.z = -80;
+	objects.push_back(copyObject);
+
+	border.xMax = copyObject->pos.x + copyObject->pModel->collision.x;
+	border.xMin = copyObject->pos.x - copyObject->pModel->collision.x;
+	border.yMax = copyObject->pos.y + copyObject->pModel->collision.y;
+	border.yMin = copyObject->pos.y - copyObject->pModel->collision.y;
+	border.zMax = copyObject->pos.z + copyObject->pModel->collision.z;
+	border.zMin = copyObject->pos.z - copyObject->pModel->collision.z;
 	border.type = SceneBorder::PILLAR;
 	pController->setBorder(border);
 }

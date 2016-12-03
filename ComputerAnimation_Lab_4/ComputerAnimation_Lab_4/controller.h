@@ -51,4 +51,5 @@ class Controller
 		bool checkCollisionAndSetForce(Object*, Object*);
 		bool checkBorderAndSetGravity(Object*,SceneBorder);
 		float Distance(DirectX::XMFLOAT3 f1, DirectX::XMFLOAT3 f2);
+		float Distance(float x1, float y1, float x2, float y2);
 };

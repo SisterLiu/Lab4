@@ -188,6 +188,11 @@ float Controller::Distance(DirectX::XMFLOAT3 f1, DirectX::XMFLOAT3 f2)
 		(f1.z - f2.z) * (f1.z - f2.z));
 }
 
+float Controller::Distance(float x1, float y1, float x2, float y2)
+{
+	return sqrt((x1 - x2)*(x1 - x2) + (y1 - y2)*(y1 - y2));
+}
+
 bool Controller::checkCollisionAndSetForce(Object* pObj1, Object* pObj2)
 {
 	if(pObj1->motion.fixed || pObj2->motion.fixed)
@@ -337,11 +342,32 @@ bool Controller::checkBorderAndSetGravity(Object* pObj, SceneBorder border)
 
 	if(border.type == SceneBorder::PILLAR)
 	{
+		float forceSize = 0.1;
 		float rPillar = (border.xMax - border.xMin) / 2;
 		float xCenter = (border.xMax + border.xMin) / 2;
 		float zCenter = (border.zMax + border.zMin) / 2;
 
 		Force F;
+		float r = Distance(pObj->pos.x, pObj->pos.z, xCenter, zCenter);
+
+		if(r > rPillar + pObj->pModel->collision.x*3)
+			return false;
+		if(pObj->pos.y > border.yMax + pObj->pModel->collision.x * 3)
+			return false;
+		
+		if(pObj->pos.y > border.yMax)
+		{
+			F.direction.y = 1*forceSize;
+			pObj->motion.forces.push_back(F);
+		}
+		else
+		{
+			F.direction.x = pObj->pos.x - xCenter;
+			F.direction.z = pObj->pos.z - zCenter;
+			XMVECTOR FV = XMVector3Normalize(XMLoadFloat3(&F.direction))*forceSize;
+			XMStoreFloat3(&F.direction, FV);
+			pObj->motion.forces.push_back(F);
+		}
 	}
 	return true;
 }

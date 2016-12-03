@@ -7,8 +7,8 @@ using namespace DirectX;
 
 void Dx11Displayer::render(std::vector<Object*>* pObjects)
 {
-	updateCamera();
-	//updateCamera2((*pObjects)[0]);
+	//updateCamera();
+	updateCamera2(pObjects);
 
 	//-------------------------------------
 	// Clear the back buffer
@@ -23,7 +23,7 @@ void Dx11Displayer::render(std::vector<Object*>* pObjects)
 	XMVECTOR Up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 	constantBuffer.mViewCamera = XMMatrixTranspose(XMMatrixLookAtLH(Eye, LookingAt, Up));
 
-	Eye = XMVectorSet(70.0f, 100.0f, 100.0f, 0.0f);
+	Eye = XMVectorSet(70.0f, 200.0f, 100.0f, 0.0f);
 	LookingAt = XMVectorSet(40.0f, 0.0f, 40.0f, 0.0f);
 	constantBuffer.mViewLight = XMMatrixTranspose(XMMatrixLookAtLH(Eye, LookingAt, Up));
 	constantBuffer.cameraPos = eyePos;
@@ -196,7 +196,7 @@ void Dx11Displayer::updateCamera()
 	}
 }
 
-void Dx11Displayer::updateCamera2(Object* pObject)
+void Dx11Displayer::updateCamera2(std::vector<Object*>* pObjects)
 {
 	eyePos;
 	eyeDirect;
@@ -214,11 +214,11 @@ void Dx11Displayer::updateCamera2(Object* pObject)
 
 	if(cameraControl.GO_UP)
 	{
-		userForceV += UP*0.07;
+		userForceV += UP*speed;
 	}
 	if(cameraControl.GO_DOWN)
 	{
-		eyePos -= speed* UP;
+		userForceV -= UP*speed;
 	}
 	if(cameraControl.GO_LEFT)
 	{
@@ -252,28 +252,44 @@ void Dx11Displayer::updateCamera2(Object* pObject)
 	{
 		eyeDirect = XMVector4Transform(eyeDirect, XMMatrixTranspose(XMMatrixRotationY(-rotation)));
 	}
+	if(cameraControl.CAMERA_NEAR)
+	{
+		cameraDistance -= 1;
+	}
+	if(cameraControl.CAMERA_FAR)
+	{
+		cameraDistance += 1;
+	}
 
 	XMStoreFloat3(&userForce,userForceV);
-	bool hasUserForce = false;
-	for(int i = 0; i < pObject->motion.forces.size(); i++)
+	Force force;
+	force.direction = userForce;
+	force.Flag = Force::USER;
+
+	for(int i = 0; i < pObjects->size(); i++)
 	{
-		if(pObject->motion.forces[i].Flag == Force::USER)
-		{
-			pObject->motion.forces[i].direction = userForce;
-			hasUserForce = true;
-		}
+		if(!(*pObjects)[i]->motion.fixed)
+			(*pObjects)[i]->motion.forces.push_back(force);
 	}
 
-	if(!hasUserForce)
+
+	XMFLOAT3 center = {0,0,0};
+	int birdCount = 0;
+	for(int i = 0; i < pObjects->size(); i++)
 	{
-		Force force;
-		force.direction = userForce;
-		force.Flag = Force::USER;
-		pObject->motion.forces.push_back(force);
+		if((*pObjects)[i]->motion.fixed)
+			continue;
+		center.x += (*pObjects)[i]->pos.x;
+		center.y += (*pObjects)[i]->pos.y;
+		center.z += (*pObjects)[i]->pos.z;
+		birdCount++;
 	}
+	center.x /= birdCount;
+	center.y /= birdCount;
+	center.z /= birdCount;
 
 	eyeDirect = XMVector3Normalize(eyeDirect);
-	eyePos = XMLoadFloat3(&pObject->pos) - 10 * eyeDirect;
+	eyePos = XMLoadFloat3(&center) - cameraDistance * eyeDirect;
 }
 
 Dx11Displayer::Dx11Displayer(HWND hwnd)
@@ -624,6 +640,7 @@ Dx11Displayer::Dx11Displayer(HWND hwnd)
 	eyeDirect = LookingAt - Eye;
 	eyeDirect = XMVector4Normalize(eyeDirect);
 	eyePos = Eye;
+	cameraDistance = 40;
 
 	//	cameraControl
 	cameraControl.GO_UP = false;
@@ -636,6 +653,8 @@ Dx11Displayer::Dx11Displayer(HWND hwnd)
 	cameraControl.TRUN_DOWN = false;
 	cameraControl.TRUN_LEFT = false;
 	cameraControl.TRUN_RIGHT = false;
+	cameraControl.CAMERA_FAR = false;
+	cameraControl.CAMERA_NEAR = false;
 }
 
 Dx11Displayer::~Dx11Displayer()
