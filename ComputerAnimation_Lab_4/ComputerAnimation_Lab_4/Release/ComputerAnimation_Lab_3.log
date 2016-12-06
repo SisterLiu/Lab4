@@ -1,0 +1,56 @@
+﻿  ComputerAnimation_Lab_3.cpp
+  controller.cpp
+controller.cpp(14): warning C4018: “<”: 有符号/无符号不匹配
+controller.cpp(39): warning C4018: “<”: 有符号/无符号不匹配
+controller.cpp(49): warning C4018: “<”: 有符号/无符号不匹配
+controller.cpp(51): warning C4018: “<”: 有符号/无符号不匹配
+controller.cpp(55): warning C4018: “<”: 有符号/无符号不匹配
+controller.cpp(63): warning C4018: “<”: 有符号/无符号不匹配
+controller.cpp(77): warning C4018: “<”: 有符号/无符号不匹配
+controller.cpp(75): warning C4101: “currentForce”: 未引用的局部变量
+controller.cpp(132): warning C4018: “<”: 有符号/无符号不匹配
+controller.cpp(131): warning C4101: “pObject”: 未引用的局部变量
+controller.cpp(277): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
+controller.cpp(288): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
+controller.cpp(300): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
+controller.cpp(312): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
+controller.cpp(324): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
+controller.cpp(336): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
+controller.cpp(345): warning C4305: “初始化”: 从“double”到“float”截断
+controller.cpp(377): warning C4018: “<”: 有符号/无符号不匹配
+controller.cpp(391): warning C4018: “<”: 有符号/无符号不匹配
+controller.cpp(407): warning C4018: “<”: 有符号/无符号不匹配
+controller.cpp(414): warning C4244: “参数”: 从“double”转换到“float”，可能丢失数据
+  dx11Displayer.cpp
+dx11Displayer.cpp(39): warning C4018: “<”: 有符号/无符号不匹配
+dx11Displayer.cpp(50): warning C4018: “<”: 有符号/无符号不匹配
+dx11Displayer.cpp(71): warning C4018: “<”: 有符号/无符号不匹配
+dx11Displayer.cpp(148): warning C4305: “初始化”: 从“double”到“float”截断
+dx11Displayer.cpp(149): warning C4305: “初始化”: 从“double”到“float”截断
+dx11Displayer.cpp(203): warning C4305: “初始化”: 从“double”到“float”截断
+dx11Displayer.cpp(204): warning C4305: “初始化”: 从“double”到“float”截断
+dx11Displayer.cpp(269): warning C4018: “<”: 有符号/无符号不匹配
+dx11Displayer.cpp(278): warning C4018: “<”: 有符号/无符号不匹配
+dx11Displayer.cpp(440): warning C4244: “=”: 从“UINT”转换到“FLOAT”，可能丢失数据
+dx11Displayer.cpp(441): warning C4244: “=”: 从“UINT”转换到“FLOAT”，可能丢失数据
+dx11Displayer.cpp(452): warning C4244: “=”: 从“UINT”转换到“FLOAT”，可能丢失数据
+dx11Displayer.cpp(453): warning C4244: “=”: 从“UINT”转换到“FLOAT”，可能丢失数据
+dx11Displayer.cpp(451): warning C4101: “vp”: 未引用的局部变量
+  model.cpp
+model.cpp(36): warning C4018: “<”: 有符号/无符号不匹配
+model.cpp(66): warning C4018: “<”: 有符号/无符号不匹配
+model.cpp(75): warning C4018: “<”: 有符号/无符号不匹配
+model.cpp(85): warning C4018: “<”: 有符号/无符号不匹配
+model.cpp(179): warning C4018: “<”: 有符号/无符号不匹配
+model.cpp(181): warning C4316: “Mesh”: 在堆上分配的对象可能不是对齐 16
+  userInput.cpp
+  winProcedure.cpp
+winProcedure.cpp(63): warning C4101: “text”: 未引用的局部变量
+winProcedure.cpp(133): warning C4305: “参数”: 从“double”到“float”截断
+winProcedure.cpp(142): warning C4305: “=”: 从“double”到“float”截断
+winProcedure.cpp(150): warning C4244: “=”: 从“int”转换到“float”，可能丢失数据
+winProcedure.cpp(151): warning C4244: “=”: 从“int”转换到“float”，可能丢失数据
+winProcedure.cpp(152): warning C4244: “=”: 从“int”转换到“float”，可能丢失数据
+  WICTextureLoader.cpp
+  正在生成代码...
+  ComputerAnimation_Lab_3.vcxproj -> C:\Users\liu\Desktop\Computer Animation\Lab4\ComputerAnimation_Lab_4\Release\ComputerAnimation_Lab_4.exe

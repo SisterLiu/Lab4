@@ -461,7 +461,6 @@ Dx11Displayer::Dx11Displayer(HWND hwnd)
 	//	Vertex Shader
 	//-------------------------------------------------------------------------
 	ID3DBlob* pVSBlob = nullptr;
-
 	// Compile the vertex shader
 	hr = CompileShaderFromFile(L"VertexShader.hlsl", "VS", "vs_4_0", &pVSBlob);
 	if(FAILED(hr))
@@ -693,6 +692,7 @@ Dx11Displayer::~Dx11Displayer()
 //--------------------------------------------------------------------------------------
 HRESULT Dx11Displayer::CompileShaderFromFile(WCHAR* szFileName, LPCSTR szEntryPoint, LPCSTR szShaderModel, ID3DBlob** ppBlobOut)
 {
+	
 	HRESULT hr = S_OK;
 
 	DWORD dwShaderFlags = D3DCOMPILE_ENABLE_STRICTNESS;
