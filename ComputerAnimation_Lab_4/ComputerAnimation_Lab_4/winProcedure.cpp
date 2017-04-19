@@ -257,7 +257,7 @@ int WinProcedure::startLoop()
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
 		}
-		else
+		//else
 		{
 			render60();
 		}
@@ -271,7 +271,7 @@ void WinProcedure::render60()
 	ULONGLONG cur = GetTickCount64();
 	if(Timer == 0)
 		Timer = cur;
-	if(cur - Timer > 1000.0 / 120.0)
+	if(cur - Timer >= 20)
 	{
 		Timer = cur;
 		pController->next(&objects);
